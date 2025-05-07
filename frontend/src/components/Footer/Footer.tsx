@@ -1,6 +1,6 @@
-// Updated footer with corrected layout, colors, fonts, and spacing to match the design
+// Updated footer with corrected layout, colors, fonts, spacing, and links
 import React from "react";
-import { Box, Typography, Button, Grid, Divider } from "@mui/material";
+import { Box, Typography, Button, Grid, Divider, Link as MuiLink } from "@mui/material";
 
 const Footer = () => {
   return (
@@ -116,58 +116,43 @@ const Footer = () => {
           </Grid>
 
           <Grid item xs={6} md={2}>
-            <Typography fontWeight={700} mb={1}>
-              Помощь
-            </Typography>
-            <Typography>Все марки авто</Typography>
-            <Typography>Запрос по VIN</Typography>
-            <Typography>Карта сайта</Typography>
-            <Typography>Прайс-лист</Typography>
-            <Typography>Шинный калькулятор</Typography>
+            <Typography fontWeight={700} mb={1}>Помощь</Typography>
+            {['/brands', '/vin', '/sitemap', '/price', '/calculator'].map((href, i) => (
+              <MuiLink key={i} href={href} underline="hover" color="inherit" display="block">
+                {['Все марки авто', 'Запрос по VIN', 'Карта сайта', 'Прайс-лист', 'Шинный калькулятор'][i]}
+              </MuiLink>
+            ))}
           </Grid>
 
           <Grid item xs={6} md={2}>
-            <Typography fontWeight={700} mb={1}>
-              О магазине
-            </Typography>
-            <Typography>О компании</Typography>
-            <Typography>Контакты</Typography>
-            <Typography>Отзывы клиентов</Typography>
-            <Typography>Новости</Typography>
-            <Typography>Статьи</Typography>
-            <Typography>Вопрос-ответ</Typography>
-            <Typography>Вакансии</Typography>
+            <Typography fontWeight={700} mb={1}>О магазине</Typography>
+            {['/about', '/contacts', '/reviews', '/news', '/articles', '/faq', '/jobs'].map((href, i) => (
+              <MuiLink key={i} href={href} underline="hover" color="inherit" display="block">
+                {['О компании', 'Контакты', 'Отзывы клиентов', 'Новости', 'Статьи', 'Вопрос-ответ', 'Вакансии'][i]}
+              </MuiLink>
+            ))}
           </Grid>
 
           <Grid item xs={6} md={3}>
-            <Typography fontWeight={700} mb={1}>
-              Покупателям
-            </Typography>
-            <Typography>Система скидок</Typography>
-            <Typography>Партнерская программа</Typography>
-            <Typography>Способы оплаты</Typography>
-            <Typography>Гарантия</Typography>
-            <Typography>Возврат товара</Typography>
-            <Typography>Публичная оферта</Typography>
-            <Typography>Обработка файлов cookies</Typography>
-            <Typography>Обработка персональных данных</Typography>
-            <Typography>Обращения потребителей</Typography>
+            <Typography fontWeight={700} mb={1}>Покупателям</Typography>
+            {['/discounts', '/affiliate', '/payment', '/warranty', '/returns', '/offer', '/cookies', '/privacy', '/consumer-appeals'].map((href, i) => (
+              <MuiLink key={i} href={href} underline="hover" color="inherit" display="block">
+                {['Система скидок', 'Партнерская программа', 'Способы оплаты', 'Гарантия', 'Возврат товара', 'Публичная оферта', 'Обработка файлов cookies', 'Обработка персональных данных', 'Обращения потребителей'][i]}
+              </MuiLink>
+            ))}
           </Grid>
 
           <Grid item xs={6} md={2}>
-            <Typography fontWeight={700} mb={1}>
-              Профиль
-            </Typography>
-            <Typography>Вход</Typography>
-            <Typography>Регистрация</Typography>
-            <Typography fontWeight={700} mt={4}>
-              Мы в соц. сетях
-            </Typography>
+            <Typography fontWeight={700} mb={1}>Профиль</Typography>
+            <MuiLink href="/login" underline="hover" color="inherit" display="block">Вход</MuiLink>
+            <MuiLink href="/register" underline="hover" color="inherit" display="block">Регистрация</MuiLink>
+            <Typography fontWeight={700} mt={4}>Мы в соц. сетях</Typography>
             <Box sx={{ display: "flex", gap: 2, mt: 1 }}>
-              <img src="/icons/vk.svg" alt="vk" />
-              <img src="/icons/youtube.svg" alt="youtube" />
-              <img src="/icons/instagram.svg" alt="instagram" />
-              <img src="/icons/telegram.svg" alt="telegram" />
+              {['vk', 'youtube', 'instagram', 'telegram'].map((icon) => (
+                <MuiLink key={icon} href="#" underline="none">
+                  <img src={`/icons/${icon}.svg`} alt={icon} />
+                </MuiLink>
+              ))}
             </Box>
           </Grid>
         </Grid>
@@ -183,16 +168,13 @@ const Footer = () => {
             }}
           >
             <Typography>
-              Рейтинг магазина:{" "}
-              <span style={{ color: "#121212", fontWeight: 600 }}>
+              Рейтинг магазина: <span style={{ color: "#121212", fontWeight: 600 }}>
                 <img
                   src="/icons/star.svg"
                   alt="star"
                   style={{ verticalAlign: "middle", marginRight: 4 }}
-                />{" "}
-                4.9
-              </span>{" "}
-              из 5 &nbsp; 1255 Отзывов
+                /> 4.9
+              </span> из 5 &nbsp; 1255 Отзывов
             </Typography>
           </Box>
         </Box>
@@ -212,29 +194,12 @@ const Footer = () => {
             <Typography variant="body2" color="text.secondary">
               2020 © autoostrov.by — <b>zakaz@autoostrov.by</b>
             </Typography>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              maxWidth={1200}
-              mt={1}
-            >
-              Общество с ограниченной ответственностью «Ластад-М», 220076, г.
-              Минск, ул. Петра Мстиславца, дом 5, офис 206, УНП 192793177.{" "}
-              <br />
-              Зарегистрировано Минским горисполкомом 27.03.2017г. в ЕГР за
-              номером 192793177. Регистрация в Государственном Торговом Реестре
-              22.05.2017, регистрационный № 382265 <br />
-              Кусков Сергей Викторович <b>+375-44-731-25-77</b> Электронная
-              почта <b>375297772657@mail.ru</b> — лицо, уполномоченное продавцом
-              рассматривать обращения покупателей о нарушении их прав,
-              предусмотренных законодательством о защите прав потребителей{" "}
-              <br />
-              Отдел торговли и услуг администрации Первомайского района города
-              Минска: 8-017-215-17-40, 8-017-215-26-26, 8-017-215-14-65 <br />
-              местный исполнительный и распорядительный орган по месту
-              государственной регистрации, уполномоченный рассматривать
-              обращения покупателей в соответствии с законодательством об
-              обращениях граждан и юридических лиц
+            <Typography variant="body2" color="text.secondary" maxWidth={1200} mt={1}>
+              Общество с ограниченной ответственностью «Ластад-М», 220076, г. Минск, ул. Петра Мстиславца, дом 5, офис 206, УНП 192793177. <br />
+              Зарегистрировано Минским горисполкомом 27.03.2017г. в ЕГР за номером 192793177. Регистрация в Государственном Торговом Реестре 22.05.2017, регистрационный № 382265 <br />
+              Кусков Сергей Викторович <b>+375-44-731-25-77</b> Электронная почта <b>375297772657@mail.ru</b> — лицо, уполномоченное продавцом рассматривать обращения покупателей о нарушении их прав, предусмотренных законодательством о защите прав потребителей <br />
+              Отдел торговли и услуг администрации Первомайского района города Минска: 8-017-215-17-40, 8-017-215-26-26, 8-017-215-14-65 <br />
+              местный исполнительный и распорядительный орган по месту государственной регистрации, уполномоченный рассматривать обращения покупателей в соответствии с законодательством об обращениях граждан и юридических лиц
             </Typography>
             <Box sx={{ mt: 2 }}>
               <img src="/icons/payments.svg" alt="payment systems" />

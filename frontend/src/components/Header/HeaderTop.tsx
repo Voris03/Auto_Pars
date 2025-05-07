@@ -1,4 +1,13 @@
-import { Box, Typography, Link, Stack, IconButton, InputBase, Divider, Badge } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Link as MuiLink,
+  Stack,
+  IconButton,
+  InputBase,
+  Divider,
+  Badge,
+} from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
@@ -8,6 +17,7 @@ import StorefrontIcon from "@mui/icons-material/Storefront";
 import CreditCardIcon from "@mui/icons-material/CreditCard";
 import DiscountIcon from "@mui/icons-material/Discount";
 import WorkIcon from "@mui/icons-material/Work";
+import { Link } from "react-router-dom";
 
 const HeaderTop = () => {
   return (
@@ -15,7 +25,17 @@ const HeaderTop = () => {
       {/* Верхняя панель */}
       <Box sx={{ px: 4, py: 1.5 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <Stack direction="row" spacing={3} divider={<Divider orientation="vertical" flexItem sx={{ borderColor: "rgba(255,255,255,0.3)" }} />}>
+          <Stack
+            direction="row"
+            spacing={3}
+            divider={
+              <Divider
+                orientation="vertical"
+                flexItem
+                sx={{ borderColor: "rgba(255,255,255,0.3)" }}
+              />
+            }
+          >
             <Stack direction="row" alignItems="center" spacing={0.5}>
               <StorefrontIcon sx={{ fontSize: 18 }} />
               <Typography variant="body2">Обработка и выдача заказов</Typography>
@@ -42,9 +62,9 @@ const HeaderTop = () => {
               8 (044) <b>111-11-11</b>
             </Typography>
             <TelegramIcon sx={{ fontSize: 20 }} />
-            <Link href="#" underline="hover" sx={{ color: "white", fontSize: 14 }}>
+            <MuiLink href="#" underline="hover" sx={{ color: "white", fontSize: 14 }}>
               Перезвонить
-            </Link>
+            </MuiLink>
           </Stack>
         </Stack>
       </Box>
@@ -56,7 +76,9 @@ const HeaderTop = () => {
       <Box sx={{ px: 4, py: 2 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center">
           {/* Логотип */}
-          <Box component="img" src="/logo.png" alt="Logo" sx={{ height: 40 }} />
+          <Link to="/">
+            <Box component="img" src="/logo.png" alt="Logo" sx={{ height: 40 }} />
+          </Link>
 
           {/* Поиск */}
           <Box
@@ -86,24 +108,32 @@ const HeaderTop = () => {
 
           {/* Иконки */}
           <Stack direction="row" spacing={3} alignItems="center">
-            <Stack alignItems="center">
-              <FavoriteBorderIcon />
-              <Typography variant="caption">Избранное</Typography>
-            </Stack>
-            <Stack alignItems="center">
-              <StorefrontIcon />
-              <Typography variant="caption">Мое авто</Typography>
-            </Stack>
-            <Stack alignItems="center">
-              <PersonOutlineIcon />
-              <Typography variant="caption">Войти</Typography>
-            </Stack>
-            <Stack alignItems="center">
-              <Badge badgeContent={0} color="warning">
-                <LocalMallOutlinedIcon />
-              </Badge>
-              <Typography variant="caption">Корзина</Typography>
-            </Stack>
+            <Link to="/favorites" style={{ textAlign: "center", color: "inherit", textDecoration: "none" }}>
+              <Stack alignItems="center">
+                <FavoriteBorderIcon />
+                <Typography variant="caption">Избранное</Typography>
+              </Stack>
+            </Link>
+            <Link to="/garage" style={{ textAlign: "center", color: "inherit", textDecoration: "none" }}>
+              <Stack alignItems="center">
+                <StorefrontIcon />
+                <Typography variant="caption">Мое авто</Typography>
+              </Stack>
+            </Link>
+            <Link to="/login" style={{ textAlign: "center", color: "inherit", textDecoration: "none" }}>
+              <Stack alignItems="center">
+                <PersonOutlineIcon />
+                <Typography variant="caption">Войти</Typography>
+              </Stack>
+            </Link>
+            <Link to="/cart" style={{ textAlign: "center", color: "inherit", textDecoration: "none" }}>
+              <Stack alignItems="center">
+                <Badge badgeContent={0} color="warning">
+                  <LocalMallOutlinedIcon />
+                </Badge>
+                <Typography variant="caption">Корзина</Typography>
+              </Stack>
+            </Link>
           </Stack>
         </Stack>
       </Box>
