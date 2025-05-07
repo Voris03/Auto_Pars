@@ -1,0 +1,20 @@
+version: '3.9'
+
+services:
+  local_db:
+    container_name: voris_db_container
+    image: postgres:14
+    environment:
+      POSTGRES_USER: '${DB_USER:-user}'
+      POSTGRES_PASSWORD: '${DB_PASSWORD:-1}'
+      PGDATA: /data/postgres
+      POSTGRES_MAX_CONNECTIONS: 100
+    volumes:
+      - pgdata:/data/postgres
+    ports:
+      - '${DB_PORT:-5801}:5432'
+    # command: sh -c "postgres -U user -c wal_level = hot_standby && postgres -c wal_keep_segments = 1000"
+    restart: unless-stopped
+
+volumes:
+  pgdata:
