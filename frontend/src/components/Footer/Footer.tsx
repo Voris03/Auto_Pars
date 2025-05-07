@@ -91,7 +91,7 @@ const Footer = () => {
               </Box>
             </Box>
             <Box sx={{ display: "flex", alignItems: "center", mt: 3 }}>
-              <img src="/icons/24.svg" alt="24" style={{ marginRight: 10 }} />
+              <img src="/icons/24h.svg" alt="24" style={{ marginRight: 10 }} />
               <Typography fontWeight={600}>
                 Онлайн заказы принимаются круглосуточно
               </Typography>
