@@ -1,15 +1,14 @@
 import React from 'react';
-import HeroSlider from './HeroSlider';
-import PopularPartsSection from './PopularPartsSection';
 import BrandsGrid from './BrandsGrid';
 import MainInfoSection from './MainInfoSection';
 import TextBrandList from './TextBrandList';
+import PopularPartsSection from './PopularParts/PopularPartsSection';
 
 
 const MainPage = () => {
   return (
     <>
-      <HeroSlider />
+      {/* <HeroSlider /> */}
       <PopularPartsSection />
       <TextBrandList />
       <BrandsGrid />

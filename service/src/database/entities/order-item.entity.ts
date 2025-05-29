@@ -1,17 +1,23 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { Order } from './order.entity';
-import { Product } from './product.entity';
 
 @Entity('order_items')
 export class OrderItem {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => Order, order => order.items)
+  @ManyToOne(() => Order, (order) => order.items, {
+    onDelete: 'CASCADE',
+    nullable: false,
+  })
   order: Order;
-
-  @ManyToOne(() => Product, product => product.orderItems)
-  product: Product;
 
   @Column('int')
   quantity: number;
@@ -19,9 +25,16 @@ export class OrderItem {
   @Column('decimal', { precision: 10, scale: 2 })
   price: number;
 
+  @Column('simple-json') // 💾 сохраняем "снимок" товара
+  productSnapshot: {
+    name: string;
+    brand?: string;
+    image?: string;
+  };
+
   @CreateDateColumn()
   createdAt: Date;
 
   @UpdateDateColumn()
   updatedAt: Date;
-} 
+}

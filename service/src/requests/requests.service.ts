@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, NotFoundException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RequestForm, RequestStatus } from '../database/entities/request-form.entity';
+import { User } from '../database/entities/user.entity';
 import { validateEmail, validatePhone } from '../utils/validators';
 
 @Injectable()
@@ -11,28 +12,40 @@ export class RequestsService {
     private requestFormRepository: Repository<RequestForm>,
   ) {}
 
-  async create(requestData: {
-    name: string;
-    email: string;
-    phone: string;
-    message: string;
-  }, userId?: string): Promise<RequestForm> {
-    if (!validateEmail(requestData.email)) {
+  async create(
+    requestData: {
+      name: string;
+      email: string;
+      phone: string;
+      message: string;
+    },
+    userId?: string,
+  ): Promise<RequestForm> {
+    const { name, email, phone, message } = requestData;
+
+    if (!name || name.trim().length === 0) {
+      throw new BadRequestException('Name is required');
+    }
+
+    if (!validateEmail(email)) {
       throw new BadRequestException('Invalid email format');
     }
 
-    if (!validatePhone(requestData.phone)) {
+    if (!validatePhone(phone)) {
       throw new BadRequestException('Invalid phone number format');
     }
 
-    if (requestData.message.length < 10) {
+    if (!message || message.length < 10) {
       throw new BadRequestException('Message must be at least 10 characters long');
     }
 
     const requestForm = this.requestFormRepository.create({
-      ...requestData,
+      name,
+      email,
+      phone,
+      message,
       status: RequestStatus.NEW,
-      user: userId ? { id: userId } : undefined,
+      user: userId ? ({ id: userId } as User) : undefined,
     });
 
     return this.requestFormRepository.save(requestForm);
@@ -41,6 +54,13 @@ export class RequestsService {
   async findAll(): Promise<RequestForm[]> {
     return this.requestFormRepository.find({
       relations: ['user'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async findUserRequests(userId: string): Promise<RequestForm[]> {
+    return this.requestFormRepository.find({
+      where: { user: { id: userId } },
       order: { createdAt: 'DESC' },
     });
   }
@@ -71,4 +91,4 @@ export class RequestsService {
 
     return this.requestFormRepository.save(request);
   }
-} 
+}

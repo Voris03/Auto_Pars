@@ -1,38 +1,198 @@
-// src/components/pages/CartPage/CartPage.tsx
+import React, { useState } from "react";
+import {
+  Box,
+  Typography,
+  Grid,
+  Card,
+  CardContent,
+  CardMedia,
+  Button,
+  Modal,
+  Stack,
+  Radio,
+  RadioGroup,
+  FormControlLabel,
+  TextField,
+} from "@mui/material";
+import { useCart } from "../../../context/CartContext";
+import axios from "../../../api/axiosInstance";
 
-import React from "react";
-import { Box, Typography, Grid } from "@mui/material";
-import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
-import StorefrontIcon from "@mui/icons-material/Storefront";
-import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
+const CartPage: React.FC = () => {
+  const { items, total, removeFromCart, clearCart } = useCart();
+  const [open, setOpen] = useState(false);
+  const [deliveryType, setDeliveryType] = useState("pickup");
+  const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardDate, setCardDate] = useState("");
+  const [cardCvv, setCardCvv] = useState("");
 
-const CartPage = () => {
+  const handleOrderSubmit = async () => {
+    try {
+      await axios.post("/orders/checkout", {
+        deliveryType,
+        paymentMethod,
+        cardInfo:
+          paymentMethod === "card"
+            ? { number: cardNumber, date: cardDate, cvv: cardCvv }
+            : null,
+      });
+      alert("Заказ успешно оформлен!");
+      clearCart();
+      setOpen(false);
+    } catch (err) {
+      console.error("Ошибка оформления заказа", err);
+      alert("Ошибка оформления заказа");
+    }
+  };
+
   return (
     <Box sx={{ px: 4, py: 6 }}>
       <Typography variant="h4" fontWeight="bold" gutterBottom>
         Корзина
       </Typography>
 
-      <Grid container spacing={4} justifyContent="center" my={4}>
-        <Grid item xs={12} md={3} textAlign="center">
-          <Box>
-            <ShoppingCartIcon sx={{ fontSize: 60, color: "#ccc" }} />
-            <Typography>Перейти в магазин для заказа</Typography>
+      {items.length === 0 ? (
+        <Typography>Корзина пуста</Typography>
+      ) : (
+        <>
+          <Grid container spacing={2} mt={2}>
+            {items.map((item) => (
+              <Grid item xs={12} md={6} lg={4} key={item.id}>
+                <Card>
+                  <CardMedia
+                    component="img"
+                    height="140"
+                    image={item.productImage || "/placeholder.png"}
+                    alt={item.productName || "Товар"}
+                  />
+                  <CardContent>
+                    <Typography variant="h6">{item.productName}</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Бренд: {item.productBrand || "N/A"}
+                    </Typography>
+                    <Typography variant="body2">
+                      Цена: {item.price} BYN × {item.quantity}
+                    </Typography>
+                    <Typography variant="body2">
+                      Всего: {(item.price * item.quantity).toFixed(2)} BYN
+                    </Typography>
+                    <Button
+                      size="small"
+                      color="error"
+                      onClick={() => removeFromCart(item.id)}
+                    >
+                      Удалить
+                    </Button>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+
+          <Box mt={4}>
+            <Typography variant="h6">Итого: {total.toFixed(2)} BYN</Typography>
+            <Stack direction="row" spacing={2} mt={2}>
+              <Button variant="outlined" onClick={clearCart}>
+                Очистить корзину
+              </Button>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={() => setOpen(true)}
+              >
+                Оформить заказ
+              </Button>
+            </Stack>
           </Box>
-        </Grid>
-        <Grid item xs={12} md={3} textAlign="center">
-          <Box>
-            <StorefrontIcon sx={{ fontSize: 60, color: "#ccc" }} />
-            <Typography>Перейти в каталог для подбора</Typography>
-          </Box>
-        </Grid>
-        <Grid item xs={12} md={3} textAlign="center">
-          <Box>
-            <PersonOutlineIcon sx={{ fontSize: 60, color: "#ccc" }} />
-            <Typography>Перейти в личный кабинет</Typography>
-          </Box>
-        </Grid>
-      </Grid>
+        </>
+      )}
+
+      <Modal open={open} onClose={() => setOpen(false)}>
+        <Box
+          sx={{
+            p: 4,
+            backgroundColor: "white",
+            width: 400,
+            mx: "auto",
+            mt: "10%",
+            borderRadius: 2,
+            boxShadow: 24,
+          }}
+        >
+          <Typography variant="h6" gutterBottom>
+            Оформление заказа
+          </Typography>
+
+          <Typography variant="subtitle1" sx={{ mt: 2 }}>
+            Способ доставки
+          </Typography>
+          <RadioGroup
+            row
+            value={deliveryType}
+            onChange={(e) => setDeliveryType(e.target.value)}
+          >
+            <FormControlLabel
+              value="pickup"
+              control={<Radio />}
+              label="Самовывоз"
+            />
+            <FormControlLabel
+              value="delivery"
+              control={<Radio />}
+              label="Доставка"
+            />
+          </RadioGroup>
+
+          <Typography variant="subtitle1" sx={{ mt: 2 }}>
+            Способ оплаты
+          </Typography>
+          <RadioGroup
+            row
+            value={paymentMethod}
+            onChange={(e) => setPaymentMethod(e.target.value)}
+          >
+            <FormControlLabel
+              value="cash"
+              control={<Radio />}
+              label="Наличные"
+            />
+            <FormControlLabel value="card" control={<Radio />} label="Карта" />
+          </RadioGroup>
+
+          {paymentMethod === "card" && (
+            <Stack spacing={2} mt={2}>
+              <TextField
+                fullWidth
+                label="Номер карты"
+                value={cardNumber}
+                onChange={(e) => setCardNumber(e.target.value)}
+              />
+              <TextField
+                fullWidth
+                label="Срок действия"
+                value={cardDate}
+                onChange={(e) => setCardDate(e.target.value)}
+              />
+              <TextField
+                fullWidth
+                label="CVV"
+                value={cardCvv}
+                onChange={(e) => setCardCvv(e.target.value)}
+              />
+            </Stack>
+          )}
+
+          <Button
+            variant="contained"
+            color="success"
+            fullWidth
+            sx={{ mt: 3 }}
+            onClick={handleOrderSubmit}
+          >
+            Подтвердить заказ
+          </Button>
+        </Box>
+      </Modal>
     </Box>
   );
 };

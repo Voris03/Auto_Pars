@@ -2,12 +2,20 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../database/entities/user.entity';
+import { Product } from '../database/entities/product.entity';
+import { Order } from '../database/entities/order.entity';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
+
+    @InjectRepository(Product)
+    private readonly productsRepository: Repository<Product>,
+
+    @InjectRepository(Order)
+    private readonly ordersRepository: Repository<Order>,
   ) {}
 
   async create(userData: Partial<User>): Promise<User> {
@@ -28,7 +36,9 @@ export class UsersService {
   }
 
   async findByResetToken(token: string): Promise<User | null> {
-    return this.usersRepository.findOne({ where: { resetPasswordToken: token } });
+    return this.usersRepository.findOne({
+      where: { resetPasswordToken: token },
+    });
   }
 
   async update(id: string, updateData: Partial<User>): Promise<User> {
@@ -42,4 +52,24 @@ export class UsersService {
       throw new NotFoundException(`User with ID "${id}" not found`);
     }
   }
-} 
+
+  async attachPart(userId: string, productId: number): Promise<User> {
+    const user = await this.findOne(userId);
+    const product = await this.productsRepository.findOneBy({
+      id: productId.toString(),
+    });
+    if (!product)
+      throw new NotFoundException(`Product with ID ${productId} not found`);
+
+    if (!user.parts) user.parts = [];
+    user.parts.push(product);
+    return this.usersRepository.save(user);
+  }
+
+  async getOrders(userId: string): Promise<Order[]> {
+    return this.ordersRepository.find({
+      where: { user: { id: userId } },
+      relations: ['items', 'items.product'],
+    });
+  }
+}

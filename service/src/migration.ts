@@ -72,14 +72,15 @@ async function run() {
   await createDatabaseIfNotExists();
   // await dropDatabaseIfNotExists();
 
-  // await AppDataSource.initialize();
-  // const query = fs.readFileSync(
-  //   path.join(__dirname, '/database/init.sql'),
-  //   'utf-8',
-  // );
-  // await AppDataSource.query(query);
-  // await AppDataSource.destroy();
-  // console.log('SQL script executed');
+  // Выполняем init.sql
+  await AppDataSource.initialize();
+  const query = fs.readFileSync(
+    path.join(__dirname, '/database/init.sql'),
+    'utf-8',
+  );
+  await AppDataSource.query(query);
+  await AppDataSource.destroy();
+  console.log('SQL script executed');
 }
 
 run().catch((err) => {

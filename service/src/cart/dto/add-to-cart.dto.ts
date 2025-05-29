@@ -1,15 +1,32 @@
-import { IsNumber, Min, IsInt } from 'class-validator';
+// src/cart/dto/add-to-cart.dto.ts
+import { IsInt, Min, IsNotEmpty, ValidateNested } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+
+class ProductSnapshotDto {
+  @ApiProperty()
+  @IsNotEmpty()
+  name: string;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  price: number;
+
+  @ApiProperty({ required: false })
+  brand?: string;
+
+  @ApiProperty({ required: false })
+  image?: string;
+}
 
 export class AddToCartDto {
-  @ApiProperty({ description: 'ID товара', example: 1 })
-  @IsNumber()
-  @IsInt()
-  productId: number;
+  @ApiProperty({ type: ProductSnapshotDto })
+  @ValidateNested()
+  @Type(() => ProductSnapshotDto)
+  product: ProductSnapshotDto;
 
-  @ApiProperty({ description: 'Количество товара', example: 1, minimum: 1 })
-  @IsNumber()
+  @ApiProperty({ example: 1 })
   @IsInt()
   @Min(1)
   quantity: number;
-} 
+}

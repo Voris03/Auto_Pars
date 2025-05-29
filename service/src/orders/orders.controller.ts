@@ -17,6 +17,7 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AdminGuard } from '../auth/guards/admin.guard';
 import { OrdersService } from './orders.service';
 import { Order, OrderStatus } from '../database/entities/order.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -91,8 +92,9 @@ export class OrdersController {
     return this.ordersService.findOne(req.user, id);
   }
 
+  @UseGuards(AdminGuard)
   @Put(':id/status')
-  @ApiOperation({ summary: 'Update order status' })
+  @ApiOperation({ summary: 'Update order status (admin only)' })
   @ApiResponse({
     status: 200,
     description: 'Order status updated',
@@ -110,8 +112,9 @@ export class OrdersController {
     );
   }
 
+  @UseGuards(AdminGuard)
   @Put(':id/tracking')
-  @ApiOperation({ summary: 'Update order tracking number' })
+  @ApiOperation({ summary: 'Update order tracking number (admin only)' })
   @ApiResponse({
     status: 200,
     description: 'Order tracking number updated',

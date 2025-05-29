@@ -1,4 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  OneToMany
+} from 'typeorm';
 import { User } from './user.entity';
 import { CartItem } from './cart-item.entity';
 
@@ -7,10 +15,10 @@ export class Cart {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => User, user => user.cart)
+  @ManyToOne(() => User, user => user.cart, { onDelete: 'CASCADE' })
   user: User;
 
-  @OneToMany(() => CartItem, cartItem => cartItem.cart)
+  @OneToMany(() => CartItem, cartItem => cartItem.cart, { cascade: true })
   items: CartItem[];
 
   @Column('decimal', { precision: 10, scale: 2, default: 0 })
@@ -21,4 +29,4 @@ export class Cart {
 
   @UpdateDateColumn()
   updatedAt: Date;
-} 
+}

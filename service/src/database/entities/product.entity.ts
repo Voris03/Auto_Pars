@@ -43,12 +43,6 @@ export class Product {
   @ManyToOne(() => Category, (category) => category.products)
   category!: Category;
 
-  @OneToMany(() => CartItem, (cartItem) => cartItem.product)
-  cartItems!: CartItem[];
-
-  @OneToMany(() => OrderItem, (orderItem) => orderItem.product)
-  orderItems!: OrderItem[];
-
   @Column({ default: 0 })
   popularity: number = 0;
 

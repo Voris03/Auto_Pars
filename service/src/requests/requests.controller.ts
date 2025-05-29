@@ -1,7 +1,8 @@
-import { Controller, Post, Get, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, UseGuards, Request, Patch } from '@nestjs/common';
 import { RequestsService } from './requests.service';
 import { RequestForm, RequestStatus } from '../database/entities/request-form.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AdminGuard } from '../auth/guards/admin.guard';
 import { Request as ExpressRequest } from 'express';
 
 @Controller('requests')
@@ -22,7 +23,13 @@ export class RequestsController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get()
+  @Get('mine')
+  async getUserRequests(@Request() req: ExpressRequest & { user: { id: string } }): Promise<RequestForm[]> {
+    return this.requestsService.findUserRequests(req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Get('admin')
   async findAll(): Promise<RequestForm[]> {
     return this.requestsService.findAll();
   }
@@ -33,12 +40,12 @@ export class RequestsController {
     return this.requestsService.findOne(id);
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Post(':id/status')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Patch(':id/reply')
   async updateStatus(
     @Param('id') id: string,
     @Body() data: { status: RequestStatus; adminResponse?: string },
   ): Promise<RequestForm> {
     return this.requestsService.updateStatus(id, data);
   }
-} 
+}
