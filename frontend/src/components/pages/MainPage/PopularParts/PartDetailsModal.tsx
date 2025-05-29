@@ -54,7 +54,7 @@ const PartDetailsModal: React.FC<PartDetailsModalProps> = ({
           <strong>Модификация:</strong> {product.modification}
         </Typography>
         <Typography variant="h6" color="primary" mt={2}>
-          {product.price} BYN
+          {product.price} RUB
         </Typography>
         <Button
           fullWidth

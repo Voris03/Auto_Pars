@@ -25,7 +25,7 @@ export class OrderItem {
   @Column('decimal', { precision: 10, scale: 2 })
   price: number;
 
-  @Column('simple-json') // 💾 сохраняем "снимок" товара
+  @Column('jsonb') // ✅ лучше использовать jsonb, особенно для PostgreSQL
   productSnapshot: {
     name: string;
     brand?: string;

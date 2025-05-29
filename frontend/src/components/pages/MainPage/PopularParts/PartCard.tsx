@@ -78,7 +78,7 @@ const PartCard: React.FC<PartCardProps> = ({ product, onClick }) => {
           {product.brand}
         </Typography>
         <Typography variant="subtitle2" color="primary" mt={1}>
-          {product.price} BYN
+          {product.price} RUB
         </Typography>
       </CardContent>
       <CardActions>

@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -10,6 +11,7 @@ import { Order, OrderStatus } from '../database/entities/order.entity';
 import { OrderItem } from '../database/entities/order-item.entity';
 import { CartService } from '../cart/cart.service';
 import { User } from '../database/entities/user.entity';
+import { CreateOrderDto } from './dto/create-order.dto';
 
 @Injectable()
 export class OrdersService {
@@ -17,66 +19,67 @@ export class OrdersService {
 
   constructor(
     @InjectRepository(Order)
-    private orderRepository: Repository<Order>,
+    private readonly orderRepository: Repository<Order>,
 
     @InjectRepository(OrderItem)
-    private orderItemRepository: Repository<OrderItem>,
+    private readonly orderItemRepository: Repository<OrderItem>,
 
-    private cartService: CartService,
+    private readonly cartService: CartService,
   ) {}
 
-  async createOrder(user: User, shippingAddress: string): Promise<Order> {
-    this.logger.log(`Creating order for user ${user.id}`);
+  async createOrder(user: User, dto: CreateOrderDto): Promise<Order> {
+    const { shippingAddress, deliveryType, paymentMethod, cardInfo } = dto;
+
+    this.logger.log(`Создание заказа для пользователя ${user.id}`);
 
     const cart = await this.cartService.getOrCreateCart(user);
 
-    if (!cart.items.length) {
-      this.logger.warn(
-        `Attempt to create order with empty cart for user ${user.id}`,
-      );
-      throw new BadRequestException('Cart is empty');
+    if (!cart.items || cart.items.length === 0) {
+      this.logger.warn(`Корзина пуста у пользователя ${user.id}`);
+      throw new BadRequestException('Корзина пуста');
     }
 
-    const order = this.orderRepository.create({
-      user,
-      status: OrderStatus.PENDING,
-      shippingAddress,
-      total: 0,
-    });
-
-    await this.orderRepository.save(order);
-
-    let totalAmount = 0;
-    const orderItems: OrderItem[] = [];
-
-    for (const cartItem of cart.items) {
-      const subtotal = cartItem.price * cartItem.quantity;
-
-      const orderItem = this.orderItemRepository.create({
-        order,
-        quantity: cartItem.quantity,
-        price: cartItem.price,
-        productSnapshot: {
-          name: cartItem.productName,
-          brand: cartItem.productBrand,
-          image: cartItem.productImage,
-        },
+    try {
+      const order = this.orderRepository.create({
+        user,
+        shippingAddress,
+        status: OrderStatus.PENDING,
+        total: 0,
+        contactPhone: user.phone ?? '',
+        notes: `Доставка: ${deliveryType}, Оплата: ${paymentMethod}`,
       });
 
-      orderItems.push(orderItem);
-      totalAmount += subtotal;
+      await this.orderRepository.save(order);
+
+      let total = 0;
+      const orderItems = cart.items.map((item) => {
+        const subtotal = item.price * item.quantity;
+        total += subtotal;
+
+        return this.orderItemRepository.create({
+          order,
+          quantity: item.quantity,
+          price: item.price,
+          productSnapshot: {
+            name: item.productName,
+            brand: item.productBrand,
+            image: item.productImage,
+          },
+        });
+      });
+
+      await this.orderItemRepository.save(orderItems);
+      order.total = total;
+      await this.orderRepository.save(order);
+
+      await this.cartService.clearCart(user);
+
+      this.logger.log(`Заказ ${order.id} создан для пользователя ${user.id}`);
+      return this.findOne(user, order.id);
+    } catch (error) {
+      this.logger.error('Ошибка создания заказа', error);
+      throw new InternalServerErrorException('Не удалось создать заказ');
     }
-
-    await this.orderItemRepository.save(orderItems);
-    order.total = totalAmount;
-    await this.orderRepository.save(order);
-
-    await this.cartService.clearCart(user);
-
-    this.logger.log(
-      `Order ${order.id} created successfully for user ${user.id}`,
-    );
-    return this.findOne(user, order.id);
   }
 
   async findAll(
@@ -85,21 +88,21 @@ export class OrdersService {
     startDate?: Date,
     endDate?: Date,
   ): Promise<Order[]> {
-    const queryBuilder = this.orderRepository
+    const qb = this.orderRepository
       .createQueryBuilder('order')
       .leftJoinAndSelect('order.items', 'items')
       .where('order.user.id = :userId', { userId: user.id });
 
-    if (status) queryBuilder.andWhere('order.status = :status', { status });
-    if (startDate)
-      queryBuilder.andWhere('order.createdAt >= :startDate', { startDate });
-    if (endDate)
-      queryBuilder.andWhere('order.createdAt <= :endDate', { endDate });
+    if (status) qb.andWhere('order.status = :status', { status });
+    if (startDate) qb.andWhere('order.createdAt >= :startDate', { startDate });
+    if (endDate) qb.andWhere('order.createdAt <= :endDate', { endDate });
 
-    queryBuilder.orderBy('order.createdAt', 'DESC');
+    qb.orderBy('order.createdAt', 'DESC');
 
-    const orders = await queryBuilder.getMany();
-    this.logger.log(`Found ${orders.length} orders for user ${user.id}`);
+    const orders = await qb.getMany();
+    this.logger.log(
+      `Найдено ${orders.length} заказов для пользователя ${user.id}`,
+    );
     return orders;
   }
 
@@ -110,8 +113,8 @@ export class OrdersService {
     });
 
     if (!order) {
-      this.logger.warn(`Order ${orderId} not found for user ${user.id}`);
-      throw new NotFoundException('Order not found');
+      this.logger.warn(`Заказ ${orderId} не найден у пользователя ${user.id}`);
+      throw new NotFoundException('Заказ не найден');
     }
 
     return order;
@@ -126,17 +129,15 @@ export class OrdersService {
 
     if ([OrderStatus.DELIVERED, OrderStatus.CANCELLED].includes(order.status)) {
       this.logger.warn(
-        `Cannot update status of ${order.status} order ${orderId}`,
+        `Нельзя изменить статус заказа ${orderId}, текущий: ${order.status}`,
       );
-      throw new BadRequestException(
-        `Cannot update status of ${order.status} order`,
-      );
+      throw new BadRequestException(`Нельзя изменить статус ${order.status}`);
     }
 
     order.status = status;
-    const updatedOrder = await this.orderRepository.save(order);
-    this.logger.log(`Order ${orderId} status updated to ${status}`);
-    return updatedOrder;
+    const updated = await this.orderRepository.save(order);
+    this.logger.log(`Обновлён статус заказа ${orderId} на ${status}`);
+    return updated;
   }
 
   async updateTrackingNumber(
@@ -148,17 +149,17 @@ export class OrdersService {
 
     if (order.status !== OrderStatus.SHIPPED) {
       this.logger.warn(
-        `Cannot add tracking number to order ${orderId} with status ${order.status}`,
+        `Трек-номер нельзя задать заказу ${orderId} со статусом ${order.status}`,
       );
       throw new BadRequestException(
-        'Tracking number can only be added to shipped orders',
+        'Трек-номер можно добавить только к отправленным заказам',
       );
     }
 
     order.trackingNumber = trackingNumber;
-    const updatedOrder = await this.orderRepository.save(order);
-    this.logger.log(`Order ${orderId} tracking number updated`);
-    return updatedOrder;
+    const updated = await this.orderRepository.save(order);
+    this.logger.log(`Добавлен трек-номер к заказу ${orderId}`);
+    return updated;
   }
 
   async getOrderStatistics(user: User): Promise<{
@@ -177,11 +178,8 @@ export class OrdersService {
     );
 
     const total = orders.length;
-    const totalAmount = orders.reduce(
-      (sum, order) => sum + Number(order.total),
-      0,
-    );
-    const averageOrderValue = total > 0 ? totalAmount / total : 0;
+    const sum = orders.reduce((acc, order) => acc + Number(order.total), 0);
+    const averageOrderValue = total > 0 ? sum / total : 0;
 
     return {
       total,

@@ -26,13 +26,15 @@ export class CartWithTotalsDto extends Cart {
 }
 
 @ApiTags('cart')
-@Controller('cart')
-@UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
+@Controller('cart')
 export class CartController {
   constructor(private readonly cartService: CartService) {}
 
   @Get()
+  @ApiOperation({ summary: 'Получить корзину текущего пользователя' })
+  @ApiResponse({ status: 200, type: Cart })
   async getCart(@Request() req): Promise<CartWithTotalsDto> {
     const cart = await this.cartService.getOrCreateCart(req.user);
     const { total, itemsCount } = await this.cartService.calculateTotal(cart);
@@ -40,35 +42,33 @@ export class CartController {
   }
 
   @Post('items')
+  @ApiOperation({ summary: 'Добавить товар в корзину' })
+  @ApiResponse({ status: 201, type: Cart })
   async addToCart(
     @Request() req,
     @Body() dto: AddToCartDto,
   ): Promise<CartWithTotalsDto> {
-    const cart = await this.cartService.addToCart(
-      req.user,
-      dto.product,
-      dto.quantity,
-    );
+    const cart = await this.cartService.addToCart(req.user, dto.product, dto.quantity);
     const { total, itemsCount } = await this.cartService.calculateTotal(cart);
     return Object.assign(cart, { total, itemsCount });
   }
 
   @Put('items/:id')
+  @ApiOperation({ summary: 'Обновить количество товара в корзине' })
+  @ApiResponse({ status: 200, type: Cart })
   async updateCartItem(
     @Request() req,
     @Param('id') itemId: string,
     @Body('quantity') quantity: number,
   ): Promise<CartWithTotalsDto> {
-    const cart = await this.cartService.updateCartItem(
-      req.user,
-      itemId,
-      quantity,
-    );
+    const cart = await this.cartService.updateCartItem(req.user, itemId, quantity);
     const { total, itemsCount } = await this.cartService.calculateTotal(cart);
     return Object.assign(cart, { total, itemsCount });
   }
 
   @Delete('items/:id')
+  @ApiOperation({ summary: 'Удалить товар из корзины' })
+  @ApiResponse({ status: 200, type: Cart })
   async removeFromCart(
     @Request() req,
     @Param('id') itemId: string,
@@ -79,6 +79,8 @@ export class CartController {
   }
 
   @Delete()
+  @ApiOperation({ summary: 'Очистить корзину' })
+  @ApiResponse({ status: 200, type: Cart })
   async clearCart(@Request() req): Promise<CartWithTotalsDto> {
     const cart = await this.cartService.clearCart(req.user);
     const { total, itemsCount } = await this.cartService.calculateTotal(cart);

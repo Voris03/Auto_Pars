@@ -25,39 +25,28 @@ import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { UpdateTrackingDto } from './dto/update-tracking.dto';
 
 @ApiTags('orders')
-@Controller('orders')
-@UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
+@Controller('orders')
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create new order' })
-  @ApiResponse({
-    status: 201,
-    description: 'Order created successfully',
-    type: Order,
-  })
+  @ApiOperation({ summary: 'Создать заказ' })
+  @ApiResponse({ status: 201, description: 'Заказ создан', type: Order })
   async createOrder(
     @Request() req,
-    @Body() createOrderDto: CreateOrderDto,
+    @Body() dto: CreateOrderDto,
   ): Promise<Order> {
-    return this.ordersService.createOrder(
-      req.user,
-      createOrderDto.shippingAddress,
-    );
+    return this.ordersService.createOrder(req.user, dto);
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all user orders' })
-  @ApiResponse({
-    status: 200,
-    description: 'Return all user orders',
-    type: [Order],
-  })
+  @ApiOperation({ summary: 'Получить заказы текущего пользователя' })
   @ApiQuery({ name: 'status', enum: OrderStatus, required: false })
   @ApiQuery({ name: 'startDate', type: Date, required: false })
   @ApiQuery({ name: 'endDate', type: Date, required: false })
+  @ApiResponse({ status: 200, description: 'Список заказов', type: [Order] })
   async findAll(
     @Request() req,
     @Query('status') status?: OrderStatus,
@@ -67,68 +56,67 @@ export class OrdersController {
     return this.ordersService.findAll(req.user, status, startDate, endDate);
   }
 
-  @Get('statistics')
-  @ApiOperation({ summary: 'Get order statistics' })
-  @ApiResponse({
-    status: 200,
-    description: 'Return order statistics',
-    schema: {
-      type: 'object',
-      properties: {
-        total: { type: 'number' },
-        byStatus: { type: 'object' },
-        averageOrderValue: { type: 'number' },
-      },
-    },
-  })
-  async getStatistics(@Request() req) {
-    return this.ordersService.getOrderStatistics(req.user);
-  }
-
   @Get(':id')
-  @ApiOperation({ summary: 'Get order by id' })
-  @ApiResponse({ status: 200, description: 'Return order by id', type: Order })
+  @ApiOperation({ summary: 'Получить заказ по ID' })
+  @ApiResponse({ status: 200, description: 'Информация о заказе', type: Order })
   async findOne(@Request() req, @Param('id') id: string): Promise<Order> {
     return this.ordersService.findOne(req.user, id);
   }
 
-  @UseGuards(AdminGuard)
-  @Put(':id/status')
-  @ApiOperation({ summary: 'Update order status (admin only)' })
+  @Get('statistics')
+  @ApiOperation({ summary: 'Статистика заказов пользователя' })
   @ApiResponse({
     status: 200,
-    description: 'Order status updated',
+    description: 'Статистика по заказам',
+    schema: {
+      type: 'object',
+      properties: {
+        total: { type: 'number' },
+        averageOrderValue: { type: 'number' },
+        byStatus: {
+          type: 'object',
+          additionalProperties: { type: 'number' },
+        },
+      },
+    },
+  })
+  async getStats(@Request() req) {
+    return this.ordersService.getOrderStatistics(req.user);
+  }
+
+  @Put(':id/status')
+  @UseGuards(AdminGuard)
+  @ApiOperation({ summary: 'Обновить статус заказа (только для админа)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Статус заказа обновлён',
     type: Order,
   })
   async updateStatus(
     @Request() req,
     @Param('id') id: string,
-    @Body() updateStatusDto: UpdateOrderStatusDto,
+    @Body() dto: UpdateOrderStatusDto,
   ): Promise<Order> {
-    return this.ordersService.updateStatus(
-      req.user,
-      id,
-      updateStatusDto.status,
-    );
+    return this.ordersService.updateStatus(req.user, id, dto.status);
   }
 
-  @UseGuards(AdminGuard)
   @Put(':id/tracking')
-  @ApiOperation({ summary: 'Update order tracking number (admin only)' })
+  @UseGuards(AdminGuard)
+  @ApiOperation({ summary: 'Обновить трек-номер (только для админа)' })
   @ApiResponse({
     status: 200,
-    description: 'Order tracking number updated',
+    description: 'Трек-номер обновлён',
     type: Order,
   })
-  async updateTrackingNumber(
+  async updateTracking(
     @Request() req,
     @Param('id') id: string,
-    @Body() updateTrackingDto: UpdateTrackingDto,
+    @Body() dto: UpdateTrackingDto,
   ): Promise<Order> {
     return this.ordersService.updateTrackingNumber(
       req.user,
       id,
-      updateTrackingDto.trackingNumber,
+      dto.trackingNumber,
     );
   }
 }

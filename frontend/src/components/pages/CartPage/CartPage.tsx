@@ -25,17 +25,31 @@ const CartPage: React.FC = () => {
   const [cardNumber, setCardNumber] = useState("");
   const [cardDate, setCardDate] = useState("");
   const [cardCvv, setCardCvv] = useState("");
+  const [shippingAddress, setShippingAddress] = useState("");
 
   const handleOrderSubmit = async () => {
     try {
-      await axios.post("/orders/checkout", {
+      const shippingAddress =
+        deliveryType === "pickup"
+          ? "Самовывоз, магазин на месте"
+          : "ул. Примерная, д. 1, кв. 1"; // 📝 замените на пользовательский ввод при необходимости
+
+      const payload = {
+        shippingAddress,
         deliveryType,
         paymentMethod,
         cardInfo:
           paymentMethod === "card"
-            ? { number: cardNumber, date: cardDate, cvv: cardCvv }
-            : null,
-      });
+            ? {
+                number: cardNumber,
+                date: cardDate,
+                cvv: cardCvv,
+              }
+            : undefined,
+      };
+
+      await axios.post("/orders", payload);
+
       alert("Заказ успешно оформлен!");
       clearCart();
       setOpen(false);
@@ -71,10 +85,10 @@ const CartPage: React.FC = () => {
                       Бренд: {item.productBrand || "N/A"}
                     </Typography>
                     <Typography variant="body2">
-                      Цена: {item.price} BYN × {item.quantity}
+                      Цена: {item.price} RUB × {item.quantity}
                     </Typography>
                     <Typography variant="body2">
-                      Всего: {(item.price * item.quantity).toFixed(2)} BYN
+                      Всего: {(item.price * item.quantity).toFixed(2)} RUB
                     </Typography>
                     <Button
                       size="small"
@@ -90,7 +104,7 @@ const CartPage: React.FC = () => {
           </Grid>
 
           <Box mt={4}>
-            <Typography variant="h6">Итого: {total.toFixed(2)} BYN</Typography>
+            <Typography variant="h6">Итого: {total.toFixed(2)} RUB</Typography>
             <Stack direction="row" spacing={2} mt={2}>
               <Button variant="outlined" onClick={clearCart}>
                 Очистить корзину
@@ -142,6 +156,16 @@ const CartPage: React.FC = () => {
               label="Доставка"
             />
           </RadioGroup>
+
+          {deliveryType === "delivery" && (
+            <TextField
+              fullWidth
+              label="Адрес доставки"
+              value={shippingAddress}
+              onChange={(e) => setShippingAddress(e.target.value)}
+              sx={{ mt: 2 }}
+            />
+          )}
 
           <Typography variant="subtitle1" sx={{ mt: 2 }}>
             Способ оплаты

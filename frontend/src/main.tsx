@@ -6,7 +6,7 @@ import { AuthProvider } from "./context/AuthContext"; // ✅ импорт
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <AuthProvider> {/* ✅ обернули */}
+    <AuthProvider>
       <CartProvider>
         <AppRouter />
       </CartProvider>

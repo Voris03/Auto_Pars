@@ -10,10 +10,10 @@ import HomeIcon from "@mui/icons-material/Home";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { useAuth } from "../../../context/AuthContext";
 import axiosInstance from "../../../api/axiosInstance";
+import { useAuth } from "../../../context/AuthContext";
 
-const LoginPage = () => {
+const LoginPage: React.FC = () => {
   const [emailOrPhone, setEmailOrPhone] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
@@ -23,21 +23,20 @@ const LoginPage = () => {
     e.preventDefault();
 
     try {
-      const response = await axiosInstance.post("/auth/login", {
+      const res = await axiosInstance.post("/auth/login", {
         email: emailOrPhone,
         password,
       });
 
-      const token = response.data.access_token;
-      await login(token);
+      const { access_token, user } = res.data;
 
-      alert("Успешный вход!");
+      login(access_token, user); // 👈 сохраняем токен + юзера
       navigate("/profile");
-    } catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        alert(error.response?.data?.message || "Ошибка авторизации");
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        alert(err.response?.data?.message || "Ошибка авторизации");
       } else {
-        alert("Непредвиденная ошибка");
+        alert("Непредвиденная ошибка входа");
       }
     }
   };
@@ -45,50 +44,43 @@ const LoginPage = () => {
   return (
     <Box sx={{ backgroundColor: "#fff", minHeight: "100vh", py: 4 }}>
       <Container maxWidth="sm">
-        {/* Breadcrumbs */}
+        {/* Хлебные крошки */}
         <Box sx={{ display: "flex", alignItems: "center", mb: 3, color: "#888" }}>
           <HomeIcon fontSize="small" />
           <ArrowForwardIosIcon sx={{ fontSize: 12, mx: 1 }} />
-          <Typography
-            component={Link}
-            to="/profile"
-            sx={{ textDecoration: "none", color: "inherit" }}
-          >
-            Мой профиль
+          <Typography component={Link} to="/" sx={{ textDecoration: "none", color: "inherit" }}>
+            Главная
           </Typography>
           <ArrowForwardIosIcon sx={{ fontSize: 12, mx: 1 }} />
           <Typography>Вход</Typography>
         </Box>
 
-        {/* Heading */}
         <Typography variant="h4" fontWeight="bold" textAlign="center" mb={4}>
-          Личный кабинет
+          Вход в личный кабинет
         </Typography>
 
-        {/* Login Form */}
-        <Box
-          component="form"
-          onSubmit={handleLogin}
-          noValidate
-          autoComplete="off"
-        >
+        {/* Форма */}
+        <Box component="form" onSubmit={handleLogin} noValidate>
           <TextField
             fullWidth
-            label="Логин / E-mail / Телефон"
+            label="E-mail / Телефон"
             value={emailOrPhone}
             onChange={(e) => setEmailOrPhone(e.target.value)}
             sx={{ mb: 2 }}
-          />
-          <TextField
-            fullWidth
-            label="Пароль"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            sx={{ mb: 2 }}
+            required
           />
 
-          <Box sx={{ display: "flex", gap: 2 }}>
+          <TextField
+            fullWidth
+            type="password"
+            label="Пароль"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            sx={{ mb: 3 }}
+            required
+          />
+
+          <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
             <Button
               type="submit"
               variant="contained"
@@ -98,21 +90,20 @@ const LoginPage = () => {
               Войти
             </Button>
             <Button
-              variant="outlined"
               fullWidth
+              variant="outlined"
               sx={{ borderColor: "#f7941e", color: "#f7941e" }}
             >
               Забыли пароль?
             </Button>
           </Box>
 
-          <Typography textAlign="center" mt={2}>
+          <Typography textAlign="center">
             Нет аккаунта?
             <Button
               component={Link}
               to="/register"
-              variant="text"
-              sx={{ ml: 1, color: "#f7941e", fontWeight: "bold" }}
+              sx={{ color: "#f7941e", fontWeight: "bold", ml: 1 }}
             >
               Зарегистрироваться
             </Button>

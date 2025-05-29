@@ -8,7 +8,8 @@ import MainPage from "../components/pages/MainPage/MainPage";
 import CartPage from "../components/pages/CartPage/CartPage";
 import AdminPage from "../components/pages/AdminPage/AdminPage";
 import ProfilePage from "../components/pages/ProfilePage/ProfilePage";
-import PrivateRoute from "../components/PrivateRoute/PrivateRoute";
+import PrivateRoute from "./PrivateRoute";
+import PublicRoute from "./PublicRoute"; // ✅ добавили
 
 const AppRouter = () => {
   return (
@@ -23,8 +24,22 @@ const AppRouter = () => {
               </PrivateRoute>
             }
           />
-          <Route path="login" element={<LoginPage />} />
-          <Route path="register" element={<RegisterPage />} />
+          <Route
+            path="login"
+            element={
+              <PublicRoute>
+                <LoginPage />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="register"
+            element={
+              <PublicRoute>
+                <RegisterPage />
+              </PublicRoute>
+            }
+          />
 
           {/* Защищённые маршруты */}
           <Route
@@ -44,7 +59,7 @@ const AppRouter = () => {
             }
           />
           <Route
-            path="/profile"
+            path="profile"
             element={
               <PrivateRoute>
                 <ProfilePage />
@@ -52,6 +67,7 @@ const AppRouter = () => {
             }
           />
 
+          {/* TODO: Можно добавить страницу 404 */}
           {/* <Route path="*" element={<NotFound />} /> */}
         </Route>
       </Routes>
