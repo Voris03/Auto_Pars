@@ -1,4 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  OneToMany,
+} from 'typeorm';
 import { User } from './user.entity';
 import { OrderItem } from './order-item.entity';
 
@@ -7,7 +15,7 @@ export enum OrderStatus {
   PROCESSING = 'processing',
   SHIPPED = 'shipped',
   DELIVERED = 'delivered',
-  CANCELLED = 'cancelled'
+  CANCELLED = 'cancelled',
 }
 
 @Entity('orders')
@@ -15,10 +23,15 @@ export class Order {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => User, user => user.orders)
+  @ManyToOne(() => User, (user) => user.orders, {
+    nullable: false,
+    onDelete: 'CASCADE',
+  })
   user: User;
 
-  @OneToMany(() => OrderItem, orderItem => orderItem.order)
+  @OneToMany(() => OrderItem, (orderItem) => orderItem.order, {
+    cascade: true,
+  })
   items: OrderItem[];
 
   @Column('decimal', { precision: 10, scale: 2 })
@@ -27,7 +40,7 @@ export class Order {
   @Column({
     type: 'enum',
     enum: OrderStatus,
-    default: OrderStatus.PENDING
+    default: OrderStatus.PENDING,
   })
   status: OrderStatus;
 
@@ -48,4 +61,4 @@ export class Order {
 
   @UpdateDateColumn()
   updatedAt: Date;
-} 
+}

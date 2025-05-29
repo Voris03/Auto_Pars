@@ -71,7 +71,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
   const clearCart = async () => {
     try {
-      await axios.delete("/cart/clear");
+      await axios.delete("/cart"); // ✅ корректный путь
       await loadCart();
     } catch (err) {
       console.error("Ошибка очистки корзины", err);

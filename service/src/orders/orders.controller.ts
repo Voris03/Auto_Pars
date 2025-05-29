@@ -4,10 +4,10 @@ import {
   Post,
   Body,
   Param,
-  UseGuards,
-  Request,
   Put,
   Query,
+  UseGuards,
+  Request,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -33,7 +33,11 @@ export class OrdersController {
 
   @Post()
   @ApiOperation({ summary: 'Создать заказ' })
-  @ApiResponse({ status: 201, description: 'Заказ создан', type: Order })
+  @ApiResponse({
+    status: 201,
+    description: 'Заказ успешно создан',
+    type: Order,
+  })
   async createOrder(
     @Request() req,
     @Body() dto: CreateOrderDto,
@@ -42,7 +46,7 @@ export class OrdersController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Получить заказы текущего пользователя' })
+  @ApiOperation({ summary: 'Получить все заказы текущего пользователя' })
   @ApiQuery({ name: 'status', enum: OrderStatus, required: false })
   @ApiQuery({ name: 'startDate', type: Date, required: false })
   @ApiQuery({ name: 'endDate', type: Date, required: false })
@@ -56,18 +60,11 @@ export class OrdersController {
     return this.ordersService.findAll(req.user, status, startDate, endDate);
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Получить заказ по ID' })
-  @ApiResponse({ status: 200, description: 'Информация о заказе', type: Order })
-  async findOne(@Request() req, @Param('id') id: string): Promise<Order> {
-    return this.ordersService.findOne(req.user, id);
-  }
-
   @Get('statistics')
-  @ApiOperation({ summary: 'Статистика заказов пользователя' })
+  @ApiOperation({ summary: 'Получить статистику заказов пользователя' })
   @ApiResponse({
     status: 200,
-    description: 'Статистика по заказам',
+    description: 'Объект со статистикой',
     schema: {
       type: 'object',
       properties: {
@@ -84,14 +81,17 @@ export class OrdersController {
     return this.ordersService.getOrderStatistics(req.user);
   }
 
+  @Get(':id')
+  @ApiOperation({ summary: 'Получить конкретный заказ по ID' })
+  @ApiResponse({ status: 200, description: 'Детали заказа', type: Order })
+  async findOne(@Request() req, @Param('id') id: string): Promise<Order> {
+    return this.ordersService.findOne(req.user, id);
+  }
+
   @Put(':id/status')
   @UseGuards(AdminGuard)
-  @ApiOperation({ summary: 'Обновить статус заказа (только для админа)' })
-  @ApiResponse({
-    status: 200,
-    description: 'Статус заказа обновлён',
-    type: Order,
-  })
+  @ApiOperation({ summary: 'Изменить статус заказа (только админ)' })
+  @ApiResponse({ status: 200, description: 'Статус обновлён', type: Order })
   async updateStatus(
     @Request() req,
     @Param('id') id: string,
@@ -102,12 +102,8 @@ export class OrdersController {
 
   @Put(':id/tracking')
   @UseGuards(AdminGuard)
-  @ApiOperation({ summary: 'Обновить трек-номер (только для админа)' })
-  @ApiResponse({
-    status: 200,
-    description: 'Трек-номер обновлён',
-    type: Order,
-  })
+  @ApiOperation({ summary: 'Добавить трек-номер к заказу (только админ)' })
+  @ApiResponse({ status: 200, description: 'Трек-номер добавлен', type: Order })
   async updateTracking(
     @Request() req,
     @Param('id') id: string,
