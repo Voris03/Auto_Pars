@@ -1,16 +1,11 @@
+// cart.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Cart } from '../database/entities/cart.entity';
 import { CartItem } from '../database/entities/cart-item.entity';
 import { User } from '../database/entities/user.entity';
-
-interface SnapshotProduct {
-  name: string;
-  price: number;
-  brand?: string;
-  image?: string;
-}
+import { ProductsService } from '../products/products.service';
 
 @Injectable()
 export class CartService {
@@ -20,6 +15,8 @@ export class CartService {
 
     @InjectRepository(CartItem)
     private readonly itemRepo: Repository<CartItem>,
+
+    private readonly productsService: ProductsService,
   ) {}
 
   async getOrCreateCart(user: User): Promise<Cart> {
@@ -38,16 +35,16 @@ export class CartService {
 
   async addToCart(
     user: User,
-    product: SnapshotProduct,
+    productId: number,
     quantity: number,
   ): Promise<Cart> {
     const cart = await this.getOrCreateCart(user);
+    const product = await this.productsService.findById(productId);
+    if (!product) throw new NotFoundException('Продукт не найден');
 
     const existingItem = cart.items?.find(
       (item) =>
-        item.productName === product.name &&
-        item.price === product.price &&
-        item.productBrand === product.brand,
+        item.productName === product.title && item.price === product.price,
     );
 
     if (existingItem) {
@@ -56,11 +53,11 @@ export class CartService {
     } else {
       const newItem = this.itemRepo.create({
         cart,
-        productName: product.name,
-        productBrand: product.brand,
-        productImage: product.image,
         quantity,
         price: product.price,
+        productName: product.title,
+        productBrand: product.brand,
+        productImage: product.image || product.images?.[0] || null,
       });
       await this.itemRepo.save(newItem);
     }
@@ -78,9 +75,8 @@ export class CartService {
 
     if (!item) throw new NotFoundException('Товар не найден в корзине');
 
-    if (quantity <= 0) {
-      await this.itemRepo.remove(item);
-    } else {
+    if (quantity <= 0) await this.itemRepo.remove(item);
+    else {
       item.quantity = quantity;
       await this.itemRepo.save(item);
     }
@@ -100,27 +96,19 @@ export class CartService {
 
   async clearCart(user: User): Promise<Cart> {
     const cart = await this.getOrCreateCart(user);
-
-    if (cart.items?.length) {
-      await this.itemRepo.remove(cart.items);
-    }
-
+    if (cart.items?.length) await this.itemRepo.remove(cart.items);
     return this.getOrCreateCart(user);
   }
 
-  async calculateTotal(cart: Cart): Promise<{ total: number; itemsCount: number }> {
+  async calculateTotal(
+    cart: Cart,
+  ): Promise<{ total: number; itemsCount: number }> {
     const items = cart.items || [];
-
     const total = items.reduce(
       (sum, item) => sum + item.price * item.quantity,
       0,
     );
-
-    const itemsCount = items.reduce(
-      (count, item) => count + item.quantity,
-      0,
-    );
-
+    const itemsCount = items.reduce((sum, item) => sum + item.quantity, 0);
     return { total, itemsCount };
   }
 }

@@ -9,6 +9,7 @@ import {
   Request,
   UseGuards,
   HttpCode,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -38,33 +39,48 @@ export class CartController {
   @ApiResponse({ status: 200, type: CartWithTotalsDto })
   async getCart(@Request() req): Promise<CartWithTotalsDto> {
     const cart = await this.cartService.getOrCreateCart(req.user);
-    const totals = await this.cartService.calculateTotal(cart);
-    return { ...cart, ...totals };
+    const { total, itemsCount } = await this.cartService.calculateTotal(cart);
+    return { ...cart, total, itemsCount };
   }
 
   @Post('items')
-  @ApiOperation({ summary: 'Добавить товар в корзину' })
+  @ApiOperation({ summary: 'Добавить товар в корзину по productId' })
   @ApiResponse({ status: 201, type: CartWithTotalsDto })
   async addToCart(
     @Request() req,
     @Body() dto: AddToCartDto,
   ): Promise<CartWithTotalsDto> {
-    const cart = await this.cartService.addToCart(req.user, dto.product, dto.quantity);
-    const totals = await this.cartService.calculateTotal(cart);
-    return { ...cart, ...totals };
+    const { productId, quantity } = dto;
+
+    if (!productId || quantity < 1) {
+      throw new BadRequestException(
+        'Некорректные данные: productId и quantity обязательны',
+      );
+    }
+    const cart = await this.cartService.addToCart(
+      req.user,
+      String(productId),
+      quantity,
+    );
+    const { total, itemsCount } = await this.cartService.calculateTotal(cart);
+    return { ...cart, total, itemsCount };
   }
 
   @Put('items/:id')
-  @ApiOperation({ summary: 'Изменить количество товара' })
+  @ApiOperation({ summary: 'Изменить количество товара в корзине' })
   @ApiResponse({ status: 200, type: CartWithTotalsDto })
   async updateCartItem(
     @Request() req,
     @Param('id') itemId: string,
     @Body('quantity') quantity: number,
   ): Promise<CartWithTotalsDto> {
-    const cart = await this.cartService.updateCartItem(req.user, itemId, quantity);
-    const totals = await this.cartService.calculateTotal(cart);
-    return { ...cart, ...totals };
+    const cart = await this.cartService.updateCartItem(
+      req.user,
+      itemId,
+      quantity,
+    );
+    const { total, itemsCount } = await this.cartService.calculateTotal(cart);
+    return { ...cart, total, itemsCount };
   }
 
   @Delete('items/:id')
@@ -76,17 +92,17 @@ export class CartController {
     @Param('id') itemId: string,
   ): Promise<CartWithTotalsDto> {
     const cart = await this.cartService.removeFromCart(req.user, itemId);
-    const totals = await this.cartService.calculateTotal(cart);
-    return { ...cart, ...totals };
+    const { total, itemsCount } = await this.cartService.calculateTotal(cart);
+    return { ...cart, total, itemsCount };
   }
 
   @Delete()
   @HttpCode(200)
-  @ApiOperation({ summary: 'Очистить всю корзину' })
+  @ApiOperation({ summary: 'Очистить корзину пользователя' })
   @ApiResponse({ status: 200, type: CartWithTotalsDto })
   async clearCart(@Request() req): Promise<CartWithTotalsDto> {
     const cart = await this.cartService.clearCart(req.user);
-    const totals = await this.cartService.calculateTotal(cart);
-    return { ...cart, ...totals };
+    const { total, itemsCount } = await this.cartService.calculateTotal(cart);
+    return { ...cart, total, itemsCount };
   }
 }

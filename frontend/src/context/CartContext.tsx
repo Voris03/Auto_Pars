@@ -1,15 +1,16 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import axios from "../api/axiosInstance";
 
-// Интерфейс snapshot товара
+// Интерфейс товара (для добавления в корзину)
 export interface SnapshotProduct {
+  id: number; // числовой ID товара
   name: string;
   price: number;
   brand?: string;
   image?: string;
 }
 
-// Интерфейс элемента корзины
+// Элемент корзины
 export interface CartItem {
   id: string;
   quantity: number;
@@ -19,7 +20,7 @@ export interface CartItem {
   productImage?: string;
 }
 
-// Интерфейс операций
+// Тип контекста
 interface CartContextType {
   items: CartItem[];
   total: number;
@@ -29,17 +30,19 @@ interface CartContextType {
   loadCart: () => Promise<void>;
 }
 
-// Контекст
+// Создание контекста
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 // Провайдер
-export const CartProvider = ({ children }: { children: React.ReactNode }) => {
+export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [items, setItems] = useState<CartItem[]>([]);
   const [total, setTotal] = useState<number>(0);
 
+  // Пересчёт вручную (на случай, если с бэка не придёт total)
   const calculateTotal = (cart: CartItem[]) =>
     cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
+  // Загрузка корзины
   const loadCart = async () => {
     try {
       const res = await axios.get("/cart");
@@ -47,34 +50,41 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       setItems(data.items || []);
       setTotal(data.total || calculateTotal(data.items || []));
     } catch (err) {
-      console.error("Ошибка загрузки корзины", err);
+      console.error("Ошибка загрузки корзины:", err);
     }
   };
 
+  // Добавление в корзину
   const addToCart = async (product: SnapshotProduct, quantity = 1) => {
     try {
-      await axios.post("/cart/items", { product, quantity });
+      if (!product?.id) throw new Error("productId отсутствует");
+      await axios.post("/cart/items", {
+        productId: Number(product.id),
+        quantity,
+      });
       await loadCart();
     } catch (err) {
-      console.error("Ошибка добавления в корзину", err);
+      console.error("Ошибка добавления в корзину:", err);
     }
   };
 
+  // Удаление из корзины
   const removeFromCart = async (itemId: string) => {
     try {
       await axios.delete(`/cart/items/${itemId}`);
       await loadCart();
     } catch (err) {
-      console.error("Ошибка удаления из корзины", err);
+      console.error("Ошибка удаления из корзины:", err);
     }
   };
 
+  // Очистка корзины
   const clearCart = async () => {
     try {
-      await axios.delete("/cart"); // ✅ корректный путь
+      await axios.delete("/cart");
       await loadCart();
     } catch (err) {
-      console.error("Ошибка очистки корзины", err);
+      console.error("Ошибка очистки корзины:", err);
     }
   };
 
@@ -83,25 +93,23 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   return (
-    <CartContext.Provider
-      value={{ items, total, addToCart, removeFromCart, clearCart, loadCart }}
-    >
+    <CartContext.Provider value={{ items, total, addToCart, removeFromCart, clearCart, loadCart }}>
       {children}
     </CartContext.Provider>
   );
 };
 
 // Хук
-export const useCart = () => {
-  const ctx = useContext(CartContext);
-  if (!ctx) throw new Error("useCart must be used within CartProvider");
-  return ctx;
+export const useCart = (): CartContextType => {
+  const context = useContext(CartContext);
+  if (!context) throw new Error("useCart must be used within a CartProvider");
+  return context;
 };
 
-// Отдельный вызов
+// Вспомогательный метод (если хочешь вызвать вне хука)
 export const addToCartApi = async (product: SnapshotProduct, quantity = 1) => {
   return axios.post("/cart/items", {
-    product,
+    productId: Number(product.id),
     quantity,
   });
 };

@@ -39,6 +39,7 @@ const PartCard: React.FC<PartCardProps> = ({ product, onClick }) => {
     try {
       await addToCart(
         {
+          id: product.id, // 👈 ОБЯЗАТЕЛЬНО
           name: product.title,
           price: product.price,
           brand: product.brand,

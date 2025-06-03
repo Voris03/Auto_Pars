@@ -12,6 +12,7 @@ import { OrderItem } from '../database/entities/order-item.entity';
 import { CartService } from '../cart/cart.service';
 import { User } from '../database/entities/user.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { UsersService } from 'src/users/users.service';
 
 @Injectable()
 export class OrdersService {
@@ -25,10 +26,12 @@ export class OrdersService {
     private readonly orderItemRepository: Repository<OrderItem>,
 
     private readonly cartService: CartService,
+    private readonly userService: UsersService,
   ) {}
-
-  async createOrder(user: User, dto: CreateOrderDto): Promise<Order> {
+  
+  async createOrder( reqUser: { userId: string }, dto: CreateOrderDto): Promise<Order> {
     const { shippingAddress, deliveryType, paymentMethod, cardInfo } = dto;
+    const user = await this.userService.findOne(reqUser.userId);
 
     this.logger.log(`Создание заказа для пользователя ${user.id}`);
 

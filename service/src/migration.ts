@@ -1,17 +1,22 @@
 import { DataSource } from 'typeorm';
-import * as fs from 'fs';
-import * as path from 'path';
-
-const AppDataSource = new DataSource({
-  type: 'postgres',
-  host: 'localhost',
-  port: 5656,
-  username: 'postgres',
-  password: 'postgres',
-  database: 'auto_parts',
-});
-
 import { Client } from 'pg';
+import { AppDataSource } from './config/data-source';
+
+async function dropDatabaseIfExists() {
+  const client = new Client({
+    user: 'postgres',
+    password: 'postgres',
+    host: 'localhost',
+    port: 5656,
+    database: 'postgres',
+  });
+
+  await client.connect();
+  const dbName = 'auto_parts';
+  await client.query(`DROP DATABASE IF EXISTS "${dbName}"`);
+  console.log(`❌ База ${dbName} удалена`);
+  await client.end();
+}
 
 async function createDatabaseIfNotExists() {
   const client = new Client({
@@ -19,70 +24,42 @@ async function createDatabaseIfNotExists() {
     password: 'postgres',
     host: 'localhost',
     port: 5656,
-    database: 'postgres', // подключаемся к системной БД
+    database: 'postgres',
   });
 
   await client.connect();
   const dbName = 'auto_parts';
-
-  // Проверка и создание базы
   const result = await client.query(
     `SELECT 1 FROM pg_database WHERE datname = $1`,
-    [dbName],
+    [dbName]
   );
+
   if (result.rowCount === 0) {
-    await client.query(`CREATE DATABASE ${dbName}`);
-    console.log(`Database "${dbName}" created.`);
+    await client.query(`CREATE DATABASE "${dbName}"`);
+    console.log(`✅ База ${dbName} создана`);
   } else {
-    console.log(`Database "${dbName}" already exists.`);
+    console.log(`ℹ️ База ${dbName} уже существует`);
   }
 
   await client.end();
 }
 
-async function dropDatabaseIfNotExists() {
-  const client = new Client({
-    user: 'postgres',
-    password: 'postgres',
-    host: 'localhost',
-    port: 5656,
-    database: 'postgres', // подключаемся к системной БД
-  });
-
-  await client.connect();
-  const dbName = 'auto_parts';
-
-  await client.query(`DROP DATABASE IF EXISTS ${dbName}`);
-  // Проверка и создание базы
-  // const result = await client.query(
-  //   `SELECT 1 FROM pg_database WHERE datname = $1`,
-  //   [dbName],
-  // );
-  // if (result.rowCount === 1) {
-  //   await client.query(`CREATE DATABASE ${dbName}`);
-  //   console.log(`Database "${dbName}" created.`);
-  // } else {
-  //   console.log(`Database "${dbName}" already exists.`);
-  // }
-
-  await client.end();
-}
-
-async function run() {
-  await createDatabaseIfNotExists();
-  // await dropDatabaseIfNotExists();
-
-  // Выполняем init.sql
+async function runMigrations() {
   await AppDataSource.initialize();
-  const query = fs.readFileSync(
-    path.join(__dirname, '/database/init.sql'),
-    'utf-8',
-  );
-  await AppDataSource.query(query);
+  console.log('📦 Подключение к БД установлено');
+
+  await AppDataSource.runMigrations();
+  console.log('🚀 Миграции выполнены');
+
   await AppDataSource.destroy();
-  console.log('SQL script executed');
 }
 
-run().catch((err) => {
-  console.error('Error running init.sql:', err);
+async function main() {
+  await dropDatabaseIfExists();
+  await createDatabaseIfNotExists();
+  // await runMigrations();
+}
+
+main().catch((err) => {
+  console.error('💥 Ошибка при запуске миграции:', err);
 });
