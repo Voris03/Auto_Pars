@@ -1,5 +1,4 @@
 # Auto_Pars
-Курсовая/Дипломная работа
 
 Интернет-магазин на стеке React + Material UI + Node.js + PostgreSQL
 
