@@ -9,9 +9,8 @@ import {
 } from "@mui/material";
 import { useCart } from "../../../../context/CartContext";
 
-// Тип данных для отображаемого продукта
 export interface Product {
-  id: number; // можно оставить для клиента
+  id: number;
   title: string;
   brand: string;
   model: string;
@@ -23,7 +22,6 @@ export interface Product {
   image?: string;
 }
 
-// Пропсы карточки
 interface PartCardProps {
   product: Product;
   onClick: () => void;
@@ -32,14 +30,12 @@ interface PartCardProps {
 const PartCard: React.FC<PartCardProps> = ({ product, onClick }) => {
   const { addToCart } = useCart();
 
-  const handleAddToCart = async (
-    e: React.MouseEvent<HTMLButtonElement, MouseEvent>
-  ) => {
+  const handleAddToCart = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     try {
       await addToCart(
         {
-          id: product.id, // 👈 ОБЯЗАТЕЛЬНО
+          id: product.id,
           name: product.title,
           price: product.price,
           brand: product.brand,
@@ -47,8 +43,8 @@ const PartCard: React.FC<PartCardProps> = ({ product, onClick }) => {
         },
         1
       );
-    } catch (error) {
-      console.error("Ошибка при добавлении товара в корзину", error);
+    } catch (err) {
+      console.error("Ошибка при добавлении в корзину", err);
     }
   };
 
@@ -56,37 +52,41 @@ const PartCard: React.FC<PartCardProps> = ({ product, onClick }) => {
     <Card
       onClick={onClick}
       sx={{
-        p: 1,
+        p: 1.5,
         height: "100%",
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
+        borderRadius: 2,
+        boxShadow: 2,
+        transition: "transform 0.2s",
+        "&:hover": { transform: "scale(1.02)" },
         cursor: "pointer",
       }}
     >
       <CardMedia
         component="img"
-        height="100"
+        height="120"
         image={product.image || "/placeholder.png"}
         alt={product.title}
         sx={{ objectFit: "contain", mb: 1 }}
       />
-      <CardContent sx={{ p: 1 }}>
-        <Typography variant="body2" fontWeight="bold" noWrap>
+      <CardContent sx={{ p: 1, flexGrow: 1 }}>
+        <Typography variant="subtitle2" fontWeight={600} noWrap>
           {product.title}
         </Typography>
         <Typography variant="caption" color="text.secondary" noWrap>
           {product.brand}
         </Typography>
-        <Typography variant="subtitle2" color="primary" mt={1}>
-          {product.price} RUB
+        <Typography variant="subtitle2" color="primary" mt={0.5}>
+          {product.price.toLocaleString()} ₽
         </Typography>
       </CardContent>
-      <CardActions>
+      <CardActions sx={{ p: 1, pt: 0 }}>
         <Button
           fullWidth
           size="small"
-          variant="outlined"
+          variant="contained"
           color="warning"
           onClick={handleAddToCart}
         >

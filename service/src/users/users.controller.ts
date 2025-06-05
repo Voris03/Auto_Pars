@@ -2,7 +2,8 @@ import { Controller, Get, Put, Delete, Body, Param, Post, UseGuards, Patch } fro
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { User } from '../database/entities/user.entity';
-import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+
 
 
 @Controller('users')

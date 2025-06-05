@@ -1,27 +1,31 @@
-import axios from "axios";
+import axios, {
+  type AxiosInstance,
+  type InternalAxiosRequestConfig,
+} from "axios";
 
-const axiosInstance = axios.create({
+const axiosInstance: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:4000",
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-axiosInstance.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
+// Добавляем токен авторизации, если он есть
+axiosInstance.interceptors.request.use(
+  (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
+    const token = localStorage.getItem("token");
 
-  if (token && config.headers) {
-    // Проверка: headers может быть либо объектом, либо AxiosHeaders
-    if (typeof (config.headers as any).set === "function") {
-      // В случае AxiosHeaders
-      (config.headers as any).set("Authorization", `Bearer ${token}`);
-    } else if (typeof config.headers === "object") {
-      // В случае обычного объекта
-      config.headers["Authorization"] = `Bearer ${token}`;
+    if (token && config.headers) {
+      // Если headers — это AxiosHeaders
+      if (typeof (config.headers as any).set === "function") {
+        (config.headers as any).set("Authorization", `Bearer ${token}`);
+      } else {
+        (config.headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
+      }
     }
-  }
 
-  return config;
-});
+    return config;
+  },
+);
 
 export default axiosInstance;

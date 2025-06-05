@@ -56,8 +56,9 @@ export class UsersService {
   async attachPart(userId: string, productId: number): Promise<User> {
     const user = await this.findOne(userId);
     const product = await this.productsRepository.findOneBy({
-      id: productId.toString(),
+      id: productId, // ✅ исправлено
     });
+
     if (!product)
       throw new NotFoundException(`Product with ID ${productId} not found`);
 
@@ -69,7 +70,7 @@ export class UsersService {
   async getOrders(userId: string): Promise<Order[]> {
     return this.ordersRepository.find({
       where: { user: { id: userId } },
-      relations: ['items']
+      relations: ['items'],
     });
   }
 }

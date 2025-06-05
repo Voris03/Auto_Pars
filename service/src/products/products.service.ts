@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, Between, In } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Product } from '../database/entities/product.entity';
 import { Category } from '../database/entities/category.entity';
 
@@ -10,6 +10,12 @@ export interface ProductFilters {
   minPrice?: number;
   maxPrice?: number;
   search?: string;
+
+  model?: string;
+  year?: string;
+  engine?: string;
+  body?: string;
+  modification?: string;
 }
 
 export interface ProductSort {
@@ -21,84 +27,137 @@ export interface ProductSort {
 export class ProductsService {
   constructor(
     @InjectRepository(Product)
-    private productsRepository: Repository<Product>,
+    private readonly productsRepository: Repository<Product>,
+
     @InjectRepository(Category)
-    private categoriesRepository: Repository<Category>,
+    private readonly categoriesRepository: Repository<Category>,
   ) {}
 
   async findAll(
-    page: number = 1,
-    limit: number = 10,
+    page: string | number = 1,
+    limit: string | number = 10,
     filters?: ProductFilters,
     sort?: ProductSort,
   ) {
-    const queryBuilder = this.productsRepository
-      .createQueryBuilder('products')
-      .leftJoinAndSelect('products.category', 'category');
+    const pageNum = Number(page);
+    const limitNum = Number(limit);
 
-    // Apply filters
+    if (isNaN(pageNum) || isNaN(limitNum)) {
+      throw new Error('Параметры пагинации должны быть числами');
+    }
+
+    const qb = this.productsRepository
+      .createQueryBuilder('product')
+      .leftJoinAndSelect('product.category', 'category');
+
+    // 🔍 Фильтры по полям продукта
     if (filters) {
       if (filters.category) {
-        queryBuilder.andWhere('category.id = :categoryId', {
+        qb.andWhere('category.id = :categoryId', {
           categoryId: filters.category,
         });
       }
+
       if (filters.brand) {
-        queryBuilder.andWhere('products.brand = :brand', {
-          brand: filters.brand,
-        });
+        qb.andWhere('product.brand = :brand', { brand: filters.brand });
       }
+
       if (filters.minPrice !== undefined) {
-        queryBuilder.andWhere('products.price >= :minPrice', {
+        qb.andWhere('product.price >= :minPrice', {
           minPrice: filters.minPrice,
         });
       }
+
       if (filters.maxPrice !== undefined) {
-        queryBuilder.andWhere('products.price <= :maxPrice', {
+        qb.andWhere('product.price <= :maxPrice', {
           maxPrice: filters.maxPrice,
         });
       }
+
       if (filters.search) {
-        queryBuilder.andWhere(
-          '(products.name ILIKE :search OR products.description ILIKE :search)',
+        qb.andWhere(
+          '(product.name ILIKE :search OR product.description ILIKE :search)',
           { search: `%${filters.search}%` },
+        );
+      }
+
+      // 🔍 Фильтры по specifications (JSON поля)
+      if (filters.model) {
+        qb.andWhere(`product.specifications ->> 'model' = :model`, {
+          model: filters.model,
+        });
+      }
+
+      if (filters.year) {
+        qb.andWhere(`product.specifications ->> 'year' = :year`, {
+          year: filters.year,
+        });
+      }
+
+      if (filters.engine) {
+        qb.andWhere(`product.specifications ->> 'engine' = :engine`, {
+          engine: filters.engine,
+        });
+      }
+
+      if (filters.body) {
+        qb.andWhere(`product.specifications ->> 'body' = :body`, {
+          body: filters.body,
+        });
+      }
+
+      if (filters.modification) {
+        qb.andWhere(
+          `product.specifications ->> 'modification' = :modification`,
+          {
+            modification: filters.modification,
+          },
         );
       }
     }
 
-    // Apply sorting
+    // 📦 Сортировка
     if (sort) {
-      queryBuilder.orderBy(`products.${sort.field}`, sort.order);
+      qb.orderBy(`product.${sort.field}`, sort.order);
     } else {
-      queryBuilder.orderBy('products.createdAt', 'DESC');
+      qb.orderBy('product.createdAt', 'DESC');
     }
 
-    // Apply pagination
-    const skip = (page - 1) * limit || 0;
-    queryBuilder.skip(skip).take(limit || 10);
+    // 📄 Пагинация
+    const skip = (pageNum - 1) * limitNum;
+    qb.skip(skip).take(limitNum);
 
-    const [items, total] = await queryBuilder.getManyAndCount();
+    const [items, total] = await qb.getManyAndCount();
 
     return {
       items,
       total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil(total / limitNum),
     };
   }
 
-  async findOne(id: string): Promise<Product> {
+  async findOneById(id: number): Promise<Product> {
     const product = await this.productsRepository.findOne({
       where: { id },
       relations: ['category'],
     });
 
     if (!product) {
-      throw new NotFoundException('Product not found');
+      throw new NotFoundException(`Продукт с id=${id} не найден`);
     }
 
     return product;
+  }
+
+  async findOne(id: string): Promise<Product> {
+    const numericId = Number(id);
+    if (isNaN(numericId)) {
+      throw new NotFoundException('Некорректный ID товара');
+    }
+
+    return this.findOneById(numericId);
   }
 
   async create(productData: Partial<Product>): Promise<Product> {
@@ -122,10 +181,43 @@ export class ProductsService {
   }
 
   async getBrands(): Promise<string[]> {
-    const products = await this.productsRepository
+    const rows = await this.productsRepository
       .createQueryBuilder('product')
-      .select('DISTINCT product.brand')
+      .select('DISTINCT product.brand', 'brand')
       .getRawMany();
-    return products.map((p) => p.brand);
+
+    return rows.map((r) => r.brand).filter(Boolean);
+  }
+
+  async createFromImport(data: {
+    name: string;
+    description: string;
+    brand: string;
+    price: number;
+    image?: string;
+    categoryName: string;
+  }): Promise<Product> {
+    let category = await this.categoriesRepository.findOne({
+      where: { name: data.categoryName },
+    });
+
+    if (!category) {
+      category = this.categoriesRepository.create({ name: data.categoryName });
+      await this.categoriesRepository.save(category);
+    }
+
+    const product = this.productsRepository.create({
+      name: data.name,
+      description: data.description,
+      brand: data.brand,
+      price: data.price,
+      sku: Date.now().toString(),
+      stock: 10,
+      images: data.image ? [data.image] : [],
+      specifications: {},
+      category,
+    });
+
+    return this.productsRepository.save(product);
   }
 }

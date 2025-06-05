@@ -1,8 +1,18 @@
 import React from "react";
-import { Box, Select, MenuItem } from "@mui/material";
+import {
+  Box,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  type SelectChangeEvent,
+} from "@mui/material";
 import type { Dispatch, SetStateAction } from "react";
 
-type Filters = Pick<Product, "year" | "brand" | "model" | "body" | "engine" | "modification">;
+type Filters = Pick<
+  Product,
+  "year" | "brand" | "model" | "body" | "engine" | "modification"
+>;
 
 interface FilterPanelProps {
   filters: Filters;
@@ -23,16 +33,32 @@ interface Product {
   image?: string;
 }
 
+const fieldLabels: Record<keyof Filters, string> = {
+  year: "Год выпуска",
+  brand: "Марка",
+  model: "Модель",
+  body: "Кузов",
+  engine: "Двигатель",
+  modification: "Модификация",
+};
+
 const FilterPanel: React.FC<FilterPanelProps> = ({
   filters,
   setFilters,
   products,
 }) => {
-  const getUniqueOptions = (field: keyof Product) => {
-    return Array.from(new Set(products.map((prod) => prod[field]))).filter(Boolean);
+  const getUniqueOptions = (field: keyof Product): string[] => {
+    return Array.from(
+      new Set(
+        products
+          .map((p) => p[field])
+          .filter((val): val is string => typeof val === "string")
+      )
+    ).sort();
   };
 
-  const handleChange = (field: keyof typeof filters, value: string) => {
+  const handleChange = (field: keyof Filters, event: SelectChangeEvent) => {
+    const value = event.target.value;
     setFilters((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -48,30 +74,36 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
         mb: 3,
       }}
     >
-      {(Object.keys(filters) as (keyof typeof filters)[]).map((field) => (
-        <Select
+      {(Object.keys(filters) as (keyof Filters)[]).map((field) => (
+        <FormControl
           key={field}
-          displayEmpty
-          value={filters[field]}
-          onChange={(e) => handleChange(field, e.target.value)}
           sx={{ minWidth: 140, backgroundColor: "white", borderRadius: 1 }}
+          size="small"
         >
-          <MenuItem value="">
-            {{
-              year: "Год выпуска",
-              brand: "Марка",
-              model: "Модель",
-              body: "Кузов",
-              engine: "Двигатель",
-              modification: "Модификация",
-            }[field]}
-          </MenuItem>
-          {getUniqueOptions(field as keyof Product).map((option) => (
-            <MenuItem key={option} value={option}>
-              {option}
+          <InputLabel>{fieldLabels[field]}</InputLabel>
+          <Select
+            value={filters[field]}
+            onChange={(e) => handleChange(field, e)}
+            displayEmpty
+            label={fieldLabels[field]}
+            renderValue={(value) =>
+              value ? (
+                value
+              ) : (
+                <span style={{ color: "#aaa" }}>{fieldLabels[field]}</span>
+              )
+            }
+          >
+            <MenuItem value="">
+              <em>{fieldLabels[field]}</em>
             </MenuItem>
-          ))}
-        </Select>
+            {getUniqueOptions(field).map((option) => (
+              <MenuItem key={option} value={option}>
+                {option}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
       ))}
     </Box>
   );

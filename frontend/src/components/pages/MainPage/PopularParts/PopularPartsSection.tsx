@@ -7,48 +7,59 @@ import {
   Alert,
   Pagination,
 } from "@mui/material";
-import PartCard, { type Product } from "./PartCard";
+import PartCard from "./PartCard";
 import PartDetailsModal from "./PartDetailsModal";
 import FilterPanel from "./FilterPanel";
 import { getAllProducts } from "../../../../services/productsService";
 import { useCart } from "../../../../context/CartContext";
+import type { Product } from "../../../../types/Product"; // убедись, что путь правильный
 
-const ITEMS_PER_PAGE = 25;
+const ITEMS_PER_PAGE = 12;
 
 const PopularPartsSection: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
-  const [filters, setFilters] = useState<
-    Pick<
-      Product,
-      "year" | "brand" | "model" | "body" | "engine" | "modification"
-    >
-  >({
-    year: "",
+  const [filters, setFilters] = useState({
     brand: "",
     model: "",
+    year: "",
     body: "",
     engine: "",
     modification: "",
   });
-
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [snackOpen, setSnackOpen] = useState(false);
   const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   const { addToCart } = useCart();
 
+  const fetchProducts = async () => {
+    try {
+      const { items, totalPages } = await getAllProducts({
+        page,
+        limit: ITEMS_PER_PAGE,
+        filters,
+      });
+      setProducts(items as Product[]);
+      setTotalPages(totalPages);
+    } catch (error) {
+      console.error("Ошибка загрузки продуктов:", error);
+    }
+  };
+
   useEffect(() => {
-    getAllProducts().then(setProducts).catch(console.error);
-  }, []);
+    fetchProducts();
+  }, [page, filters]);
 
   const handleAddToCart = async (product: Product) => {
     try {
       await addToCart(
         {
-          name: product.title,
-          price: product.price,
+          id: product.id,
+          name: product.name,
+          price: Number(product.price),
           brand: product.brand,
-          image: product.image,
+          image: product.images?.[0] || "/placeholder.png",
         },
         1
       );
@@ -58,20 +69,7 @@ const PopularPartsSection: React.FC = () => {
     }
   };
 
-  const filteredProducts = products.filter((prod) =>
-    Object.entries(filters).every(
-      ([key, value]) => !value || prod[key as keyof Product] === value
-    )
-  );
-
-  const paginatedProducts = filteredProducts.slice(
-    (page - 1) * ITEMS_PER_PAGE,
-    page * ITEMS_PER_PAGE
-  );
-
-  const pageCount = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
-
-  const handlePageChange = (_: React.ChangeEvent<unknown>, value: number) => {
+  const handlePageChange = (_: any, value: number) => {
     setPage(value);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -79,7 +77,7 @@ const PopularPartsSection: React.FC = () => {
   return (
     <Box sx={{ px: 3, py: 4 }}>
       <Typography variant="h5" fontWeight="bold" gutterBottom>
-        Популярные категории запчастей
+        Популярные запчасти
       </Typography>
 
       <FilterPanel
@@ -88,18 +86,32 @@ const PopularPartsSection: React.FC = () => {
         products={products}
       />
 
-      <Grid container spacing={2}>
-        {paginatedProducts.map((prod) => (
-          <Grid item xs={6} sm={4} md={2.4} key={prod.id}>
-            <PartCard product={prod} onClick={() => setSelectedProduct(prod)} />
+      <Grid container spacing={2} mt={2}>
+        {products.map((prod) => (
+          <Grid item xs={6} sm={4} md={3} key={prod.id}>
+            <PartCard
+              product={{
+                id: prod.id,
+                title: prod.name,
+                brand: prod.brand,
+                price: Number(prod.price),
+                image: prod.images?.[0] || "/placeholder.png",
+                model: prod.specifications?.model || "",
+                year: prod.specifications?.year || "",
+                engine: prod.specifications?.engine || "",
+                body: prod.specifications?.body || "",
+                modification: prod.specifications?.modification || "",
+              }}
+              onClick={() => setSelectedProduct(prod)}
+            />
           </Grid>
         ))}
       </Grid>
 
-      {pageCount > 1 && (
-        <Box display="flex" justifyContent="center" mt={4}>
+      {totalPages > 1 && (
+        <Box mt={4} display="flex" justifyContent="center">
           <Pagination
-            count={pageCount}
+            count={totalPages}
             page={page}
             onChange={handlePageChange}
             color="primary"

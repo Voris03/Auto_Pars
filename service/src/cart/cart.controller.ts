@@ -59,7 +59,7 @@ export class CartController {
     }
     const cart = await this.cartService.addToCart(
       req.user,
-      String(productId),
+      productId,
       quantity,
     );
     const { total, itemsCount } = await this.cartService.calculateTotal(cart);
