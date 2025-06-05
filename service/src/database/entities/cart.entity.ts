@@ -5,7 +5,8 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
-  OneToMany
+  OneToMany,
+  JoinColumn,
 } from 'typeorm';
 import { User } from './user.entity';
 import { CartItem } from './cart-item.entity';
@@ -15,10 +16,14 @@ export class Cart {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => User, user => user.cart, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, (user) => user.cart, {
+    onDelete: 'CASCADE',
+    eager: false, // по желанию: если хочешь, чтобы user не подтягивался всегда
+  })
+  @JoinColumn({ name: 'userId' }) // 👈 обязательно для явной связи
   user: User;
 
-  @OneToMany(() => CartItem, cartItem => cartItem.cart, { cascade: true })
+  @OneToMany(() => CartItem, (cartItem) => cartItem.cart, { cascade: true })
   items: CartItem[];
 
   @Column('decimal', { precision: 10, scale: 2, default: 0 })
