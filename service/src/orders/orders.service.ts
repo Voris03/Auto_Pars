@@ -12,7 +12,6 @@ import { OrderItem } from '../database/entities/order-item.entity';
 import { CartService } from '../cart/cart.service';
 import { User } from '../database/entities/user.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
-import { UsersService } from 'src/users/users.service';
 
 @Injectable()
 export class OrdersService {
@@ -26,12 +25,10 @@ export class OrdersService {
     private readonly orderItemRepository: Repository<OrderItem>,
 
     private readonly cartService: CartService,
-    private readonly userService: UsersService,
   ) {}
-  
-  async createOrder( reqUser: { userId: string }, dto: CreateOrderDto): Promise<Order> {
+
+  async createOrder(user: User, dto: CreateOrderDto): Promise<Order> {
     const { shippingAddress, deliveryType, paymentMethod, cardInfo } = dto;
-    const user = await this.userService.findOne(reqUser.userId);
 
     this.logger.log(`Создание заказа для пользователя ${user.id}`);
 
@@ -103,9 +100,7 @@ export class OrdersService {
     qb.orderBy('order.createdAt', 'DESC');
 
     const orders = await qb.getMany();
-    this.logger.log(
-      `Найдено ${orders.length} заказов для пользователя ${user.id}`,
-    );
+    this.logger.log(`Найдено ${orders.length} заказов для пользователя ${user.id}`);
     return orders;
   }
 
@@ -123,17 +118,11 @@ export class OrdersService {
     return order;
   }
 
-  async updateStatus(
-    user: User,
-    orderId: string,
-    status: OrderStatus,
-  ): Promise<Order> {
+  async updateStatus(user: User, orderId: string, status: OrderStatus): Promise<Order> {
     const order = await this.findOne(user, orderId);
 
     if ([OrderStatus.DELIVERED, OrderStatus.CANCELLED].includes(order.status)) {
-      this.logger.warn(
-        `Нельзя изменить статус заказа ${orderId}, текущий: ${order.status}`,
-      );
+      this.logger.warn(`Нельзя изменить статус заказа ${orderId}, текущий: ${order.status}`);
       throw new BadRequestException(`Нельзя изменить статус ${order.status}`);
     }
 
@@ -143,20 +132,12 @@ export class OrdersService {
     return updated;
   }
 
-  async updateTrackingNumber(
-    user: User,
-    orderId: string,
-    trackingNumber: string,
-  ): Promise<Order> {
+  async updateTrackingNumber(user: User, orderId: string, trackingNumber: string): Promise<Order> {
     const order = await this.findOne(user, orderId);
 
     if (order.status !== OrderStatus.SHIPPED) {
-      this.logger.warn(
-        `Трек-номер нельзя задать заказу ${orderId} со статусом ${order.status}`,
-      );
-      throw new BadRequestException(
-        'Трек-номер можно добавить только к отправленным заказам',
-      );
+      this.logger.warn(`Трек-номер нельзя задать заказу ${orderId} со статусом ${order.status}`);
+      throw new BadRequestException('Трек-номер можно добавить только к отправленным заказам');
     }
 
     order.trackingNumber = trackingNumber;
@@ -172,22 +153,15 @@ export class OrdersService {
   }> {
     const orders = await this.findAll(user);
 
-    const byStatus = orders.reduce(
-      (acc, order) => {
-        acc[order.status] = (acc[order.status] || 0) + 1;
-        return acc;
-      },
-      {} as Record<OrderStatus, number>,
-    );
+    const byStatus = orders.reduce((acc, order) => {
+      acc[order.status] = (acc[order.status] || 0) + 1;
+      return acc;
+    }, {} as Record<OrderStatus, number>);
 
     const total = orders.length;
     const sum = orders.reduce((acc, order) => acc + Number(order.total), 0);
     const averageOrderValue = total > 0 ? sum / total : 0;
 
-    return {
-      total,
-      byStatus,
-      averageOrderValue,
-    };
+    return { total, byStatus, averageOrderValue };
   }
 }

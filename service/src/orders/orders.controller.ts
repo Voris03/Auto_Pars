@@ -7,7 +7,6 @@ import {
   Put,
   Query,
   UseGuards,
-  Request,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -23,6 +22,8 @@ import { Order, OrderStatus } from '../database/entities/order.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { UpdateTrackingDto } from './dto/update-tracking.dto';
+import { User } from '../database/entities/user.entity';
+import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 
 @ApiTags('orders')
 @ApiBearerAuth()
@@ -39,10 +40,10 @@ export class OrdersController {
     type: Order,
   })
   async createOrder(
-    @Request() req,
+    @CurrentUser() user: User,
     @Body() dto: CreateOrderDto,
   ): Promise<Order> {
-    return this.ordersService.createOrder(req.user, dto);
+    return this.ordersService.createOrder(user, dto);
   }
 
   @Get()
@@ -52,12 +53,12 @@ export class OrdersController {
   @ApiQuery({ name: 'endDate', type: Date, required: false })
   @ApiResponse({ status: 200, description: 'Список заказов', type: [Order] })
   async findAll(
-    @Request() req,
+    @CurrentUser() user: User,
     @Query('status') status?: OrderStatus,
     @Query('startDate') startDate?: Date,
     @Query('endDate') endDate?: Date,
   ): Promise<Order[]> {
-    return this.ordersService.findAll(req.user, status, startDate, endDate);
+    return this.ordersService.findAll(user, status, startDate, endDate);
   }
 
   @Get('statistics')
@@ -77,15 +78,18 @@ export class OrdersController {
       },
     },
   })
-  async getStats(@Request() req) {
-    return this.ordersService.getOrderStatistics(req.user);
+  async getStats(@CurrentUser() user: User) {
+    return this.ordersService.getOrderStatistics(user);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Получить конкретный заказ по ID' })
   @ApiResponse({ status: 200, description: 'Детали заказа', type: Order })
-  async findOne(@Request() req, @Param('id') id: string): Promise<Order> {
-    return this.ordersService.findOne(req.user, id);
+  async findOne(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+  ): Promise<Order> {
+    return this.ordersService.findOne(user, id);
   }
 
   @Put(':id/status')
@@ -93,11 +97,11 @@ export class OrdersController {
   @ApiOperation({ summary: 'Изменить статус заказа (только админ)' })
   @ApiResponse({ status: 200, description: 'Статус обновлён', type: Order })
   async updateStatus(
-    @Request() req,
+    @CurrentUser() user: User,
     @Param('id') id: string,
     @Body() dto: UpdateOrderStatusDto,
   ): Promise<Order> {
-    return this.ordersService.updateStatus(req.user, id, dto.status);
+    return this.ordersService.updateStatus(user, id, dto.status);
   }
 
   @Put(':id/tracking')
@@ -105,12 +109,12 @@ export class OrdersController {
   @ApiOperation({ summary: 'Добавить трек-номер к заказу (только админ)' })
   @ApiResponse({ status: 200, description: 'Трек-номер добавлен', type: Order })
   async updateTracking(
-    @Request() req,
+    @CurrentUser() user: User,
     @Param('id') id: string,
     @Body() dto: UpdateTrackingDto,
   ): Promise<Order> {
     return this.ordersService.updateTrackingNumber(
-      req.user,
+      user,
       id,
       dto.trackingNumber,
     );

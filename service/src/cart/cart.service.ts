@@ -23,7 +23,10 @@ export class CartService {
       where: { user: { id: user.id } },
       relations: ['items'],
     });
-
+    console.log("getOrCreateCart → user:", user.id);
+    console.log("cart is getOrCreate", cart, "user", user )
+    const carts = await this.cartRepo.count({where: {user: {id: user.id}}})
+    console.log("cartsLenght", carts)
     if (!cart) {
       cart = this.cartRepo.create({ user });
       await this.cartRepo.save(cart);
@@ -32,9 +35,12 @@ export class CartService {
     return cart;
   }
 
-  async addToCart(user: User, productId: number, quantity: number): Promise<Cart> {
+  async addToCart(
+    user: User,
+    productId: number,
+    quantity: number,
+  ): Promise<Cart> {
     const cart = await this.getOrCreateCart(user);
-
     const product = await this.productsService.findOneById(productId);
     if (!product) throw new NotFoundException('Продукт не найден');
 
@@ -63,10 +69,13 @@ export class CartService {
     return this.getOrCreateCart(user);
   }
 
-  async updateCartItem(user: User, itemId: string, quantity: number): Promise<Cart> {
+  async updateCartItem(
+    user: User,
+    itemId: string,
+    quantity: number,
+  ): Promise<Cart> {
     const cart = await this.getOrCreateCart(user);
     const item = cart.items?.find((i) => i.id === itemId);
-
     if (!item) throw new NotFoundException('Товар не найден в корзине');
 
     if (quantity <= 0) {
@@ -76,16 +85,23 @@ export class CartService {
       await this.itemRepo.save(item);
     }
 
+    // ✅ Обновим корзину
+    cart.updatedAt = new Date();
+    await this.cartRepo.save(cart);
+
     return this.getOrCreateCart(user);
   }
 
   async removeFromCart(user: User, itemId: string): Promise<Cart> {
     const cart = await this.getOrCreateCart(user);
     const item = cart.items?.find((i) => i.id === itemId);
-
     if (!item) throw new NotFoundException('Товар не найден в корзине');
 
     await this.itemRepo.remove(item);
+
+    cart.updatedAt = new Date();
+    await this.cartRepo.save(cart);
+
     return this.getOrCreateCart(user);
   }
 
@@ -94,12 +110,21 @@ export class CartService {
     if (cart.items?.length) {
       await this.itemRepo.remove(cart.items);
     }
+
+    cart.updatedAt = new Date();
+    await this.cartRepo.save(cart);
+
     return this.getOrCreateCart(user);
   }
 
-  async calculateTotal(cart: Cart): Promise<{ total: number; itemsCount: number }> {
+  async calculateTotal(
+    cart: Cart,
+  ): Promise<{ total: number; itemsCount: number }> {
     const items = cart.items || [];
-    const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const total = items.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0,
+    );
     const itemsCount = items.reduce((sum, item) => sum + item.quantity, 0);
     return { total, itemsCount };
   }

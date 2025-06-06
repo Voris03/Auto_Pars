@@ -16,7 +16,7 @@ import axios from "../../../api/axiosInstance";
 interface OrderItem {
   id: string;
   quantity: number;
-  price: number;
+  price: number | string;
   productSnapshot: {
     name: string;
     brand?: string;
@@ -27,7 +27,7 @@ interface OrderItem {
 interface Order {
   id: string;
   status: string;
-  total: number;
+  total: number | string;
   createdAt: string;
   shippingAddress: string;
   notes: string;
@@ -49,7 +49,15 @@ const ProfilePage = () => {
     const fetchOrders = async () => {
       try {
         const res = await axios.get("/orders");
-        setOrders(res.data);
+        const normalized = (res.data as Order[]).map((order) => ({
+          ...order,
+          total: Number(order.total),
+          items: order.items.map((item) => ({
+            ...item,
+            price: Number(item.price),
+          })),
+        }));
+        setOrders(normalized);
       } catch (err) {
         console.error("Ошибка при загрузке заказов:", err);
       } finally {
@@ -119,7 +127,8 @@ const ProfilePage = () => {
               <strong>Статус:</strong> {order.status}
             </Typography>
             <Typography>
-              <strong>Сумма:</strong> {order.total.toFixed(2)} RUB
+              <strong>Сумма:</strong> {(Number(order.total) || 0).toFixed(2)}{" "}
+              RUB
             </Typography>
             <Typography>
               <strong>Адрес:</strong> {order.shippingAddress}
@@ -141,7 +150,7 @@ const ProfilePage = () => {
               {order.items.map((item) => (
                 <li key={item.id}>
                   {item.productSnapshot?.name || "—"} × {item.quantity} шт. —{" "}
-                  {item.price.toFixed(2)} RUB
+                  {(Number(item.price) || 0).toFixed(2)} RUB
                 </li>
               ))}
             </ul>
@@ -153,4 +162,3 @@ const ProfilePage = () => {
 };
 
 export default ProfilePage;
- 
